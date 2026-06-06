@@ -3,3 +3,5 @@ plotly>=5.24
 pandas
 numpy
 pyarrow
+scikit-learn
+umap-learn

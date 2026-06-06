@@ -13,6 +13,7 @@ import sys
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA 
+import umap
 
 CBS_COLS = ["population", "income", "pct_green", "avg_age", "home_value", "density"]
 
@@ -25,6 +26,10 @@ def cosine(emb):
 def pca2(emb):
     return PCA(n_components=2).fit_transform(emb)
 
+def umap2(emb):
+    reducer = umap.UMAP()
+    return reducer.fit_transform(emb)
+
 
 def build(emb_clip, emb_text, df):
     """Attach PCA coords, save parquet + similarity matrices.
@@ -32,7 +37,7 @@ def build(emb_clip, emb_text, df):
     The CBS 'dense vector' is just the standardized CBS stat columns -> its own space."""
     df = df.copy()
     emb_cbs = ((df[CBS_COLS] - df[CBS_COLS].mean()) / (df[CBS_COLS].std() + 1e-9)).values
-    df[["clip_x", "clip_y"]] = pca2(emb_clip)
+    df[["clip_x", "clip_y"]] = pca2(emb_clip) # Change to umap2(emb_clip) for umap projections
     df[["text_x", "text_y"]] = pca2(emb_text)
     df[["cbs_x", "cbs_y"]] = pca2(emb_cbs)
     df.to_parquet("data.parquet")
