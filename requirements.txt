@@ -5,3 +5,4 @@ numpy
 pyarrow
 scikit-learn
 umap-learn
+requests
