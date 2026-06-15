@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "amsterdam",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["app_amsterdam.py"],
+      "port": 8051
+    },
+    {
+      "name": "nl",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["app_nl.py"],
+      "port": 8052
+    }
+  ]
+}
