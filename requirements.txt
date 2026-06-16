@@ -5,3 +5,12 @@ numpy
 pyarrow
 scikit-learn
 umap-learn
+torch
+open_clip_torch
+sentence-transformers
+huggingface_hub
+geopandas
+shapely
+pyogrio
+pillow
+requests

@@ -1,3 +1,15 @@
+# TODO
+
+store all data in data folder
+
+
+fix the gitignore
+
+integrate text descriptions dataset
+
+
+
+
 
 
 
@@ -26,6 +38,215 @@ This project is a visualisation of a lat lon location in embedding spaces
 - when the user clicks on one of the embedding spaces, we see the dots highlight in the other embeddingspace that is most similar and in the current highlighted map,
  we see all the dots in top k places that are similar according to embedding space (both clip and textual)
 
+
+ # CBS WFS fields
+
+The CBS socio-economic variables are loaded directly from the PDOK
+`wijkenbuurten:buurten` WFS (no extra download — `buurten()` already fetches them).
+To change which variables the system uses, edit the `CBS` dict in `precompute.py`:
+each entry is `"column_label": "wfsFieldName"`. Pick any field below and re-run
+`precompute.py`. `app.py` shows whatever labels you defined in the spider/table.
+
+Caveats when picking fields:
+- `afstandTot…` / `…GemiddeldeAfstandInKm` are **proximity** (km), not amount — a
+  *smaller* value means *closer*.
+- There is **no `% green`** field and **no `avg_age`** field — only distances to
+  green/nature and the age-bucket percentages (`percentagePersonen…Jaar`).
+- Some buurten (water-only / very small) have missing values; `build()` masks
+  negatives and imputes the median so standardisation stays well-defined.
+
+Full list of available fields on each buurt feature (PDOK CBS wijkenbuurten 2023):
+
+**Demographics & population**
+- `aantalInwoners` — number of inhabitants
+- `mannen` — number of men
+- `vrouwen` — number of women
+- `bevolkingsdichtheidInwonersPerKm2` — population density (inhabitants/km²)
+- `omgevingsadressendichtheid` — surrounding address density
+- `stedelijkheidAdressenPerKm2` — urbanity (addresses/km²)
+
+**Age distribution**
+- `percentagePersonen0Tot15Jaar` — % persons 0–15 years
+- `percentagePersonen15Tot25Jaar` — % persons 15–25 years
+- `percentagePersonen25Tot45Jaar` — % persons 25–45 years
+- `percentagePersonen45Tot65Jaar` — % persons 45–65 years
+- `percentagePersonen65JaarEnOuder` — % persons 65+ years
+
+**Marital status**
+- `percentageOngehuwd` — % unmarried
+- `percentageGehuwd` — % married
+- `percentageGescheid` — % divorced
+- `percentageVerweduwd` — % widowed
+
+**Birth & death**
+- `geboorteTotaal` — total births
+- `geboortesPer1000Inwoners` — births per 1000 inhabitants
+- `sterfteTotaal` — total deaths
+- `sterfteRelatief` — relative death rate
+
+**Households**
+- `aantalHuishoudens` — number of households
+- `percentageEenpersoonshuishoudens` — % single-person households
+- `percentageHuishoudensZonderKinderen` — % households without children
+- `percentageHuishoudensMetKinderen` — % households with children
+- `gemiddeldeHuishoudsgrootte` — average household size
+
+**Ethnicity & origin**
+- `percentageMetHerkomstlandNederland` — % with Dutch origin
+- `percentageMetHerkomstlandUitEuropaExclNl` — % origin elsewhere in Europe (excl. NL)
+- `percentageMetHerkomstlandBuitenEuropa` — % origin outside Europe
+- `percentageGebInNlMetHerkomstlandNederland` — % born in NL, Dutch origin
+- `percGebInNlMetHerkomstlandInEuropaExNl` — % born in NL, European origin (excl. NL)
+- `percGebInNlMetHerkomstlandBuitenEuropa` — % born in NL, non-European origin
+- `percGebBuitenNlMetHerkomstlndInEuropaExNl` — % born outside NL, European origin (excl. NL)
+- `percGebBuitenNlMetHerkomstlndBuitenEuropa` — % born outside NL, non-European origin
+
+**Business & employment**
+- `aantalBedrijfsvestigingen` — total business establishments
+- `aantalBedrijvenLandbouwBosbouwVisserij` — businesses in agriculture/forestry/fishing
+- `aantalBedrijvenNijverheidEnergie` — businesses in industry/energy
+- `aantalBedrijvenHandelEnHoreca` — businesses in trade/hospitality
+- `aantalBedrijvenVervoerInformatieCommunicatie` — businesses in transport/IT/communication
+- `aantalBedrijvenFinancieelOnroerendGoed` — businesses in finance/real estate
+- `aantalBedrijvenZakelijkeDienstverlening` — business-service companies
+- `aantalBedrijvenOverheidOnderwijsEnZorg` — businesses in government/education/health
+- `aantalBedrijvenCultuurRecreatieOverige` — businesses in culture/recreation/other
+- `nettoArbeidsparticipatie` — net labour-force participation
+- `percentageWerknemers` — % employees
+- `percentageZelfstandigen` — % self-employed
+- `aantalPersWerkzameBeroepsbevolking` — employed working population
+- `percentageWerknemersMetVasteArbeidsrelatie` — % with permanent employment
+- `percentageWerknemersMetFlexibeleArbeidsrelatie` — % with flexible employment
+
+**Housing & real estate**
+- `gemiddeldeWoningwaarde` — average home value (WOZ)
+- `woningvoorraad` — housing stock (total dwellings)
+- `percentageEengezinswoning` — % single-family homes
+- `percentageMeergezinswoning` — % multi-family homes
+- `percentageBewoond` — % occupied dwellings
+- `percentageOnbewoond` — % unoccupied dwellings
+- `percentageLeegstandWoningen` — % vacant dwellings
+- `percentageKoopwoningen` — % owner-occupied dwellings
+- `percentageHuurwoningen` — % rental dwellings
+- `percHuurwoningenInBezitWoningcorporaties` — % rentals owned by housing corporations
+- `percHuurwoningenInBezitOverigeVerhuurders` — % rentals owned by other landlords
+- `percentageWoningenMetEigendomOnbekend` — % dwellings with unknown ownership
+- `percentageBouwjaarklasseTot2000` — % built before 2000
+- `percentageBouwjaarklasseVanaf2000` — % built from 2000 onwards
+
+**Energy consumption**
+- `gemiddeldGasverbruikTotaal` — average gas consumption (total)
+- `gemiddeldGasverbruikAppartement` / `…Tussenwoning` / `…Hoekwoning` / `…2Onder1KapWoning` / `…VrijstaandeWoning` — gas by dwelling type
+- `gemiddeldGasverbruikHuurwoning` / `gemiddeldGasverbruikkoopwoning` — gas by tenure
+- `gemiddeldAardgasverbruik` — average natural-gas consumption
+- `gemiddeldElektriciteitsverbruikTotaal` — average electricity consumption (total)
+- `gemiddeldElektriciteitsverbruikAppartement` / `…Tussenwoning` / `…Hoekwoning` / `gemElektriciteitsverbruik2Onder1KapWoning` / `gemElektriciteitsverbruikVrijstaandeWoning` — electricity by dwelling type
+- `gemiddeldElektriciteitsverbruikHuurwoning` / `gemiddeldElektriciteitsverbruikkoopwoning` — electricity by tenure
+- `gemiddeldeElektriciteitslevering` — average electricity delivery
+- `percentageWoningenMetStadsverwarming` — % homes with district heating
+
+**Income & social benefits**
+- `aantalInkomensontvangers` — number of income earners
+- `gemiddeldInkomenPerInkomensontvanger` — average income per earner
+- `gemiddeldInkomenPerInwoner` — average income per resident
+- `gemiddeldGestandaardiseerdInkomenVanHuishoudens` — average standardised household income
+- `mediaanVermogenVanParticuliereHuish` — median wealth of private households
+- `percentagePersonenMetHoogInkomen` / `percentagePersonenMetLaagInkomen` — % persons high/low income
+- `percentageHuishoudensMetHoogInkomen` / `percentageHuishoudensMetLaagInkomen` — % households high/low income
+- `percentageHuishoudensMetLaagsteInkomen` — % households lowest income
+- `percentageHuishoudensMetLageKoopkracht` — % households low purchasing power
+- `percentageHuishoudensOnderOfRondSociaalMinimum` — % households at/below social minimum
+- `huishoudensTot110PercentVanSociaalMinimum` / `huishoudensTot120PercentVanSociaalMinimum` — households up to 110%/120% of social minimum
+- `aantalPersonenMetEenAoUitkeringTotaal` — persons on disability benefit
+- `aantalPersonenMetEenWwUitkeringTotaal` — persons on unemployment benefit
+- `aantalPersonenMetEenAlgBijstandsuitkeringTot` — persons on general assistance
+- `aantalPersonenMetEenAowUitkeringTotaal` — persons on old-age pension
+
+**Education**
+- `opleidingsniveauLaag` / `opleidingsniveauMiddelbaar` / `opleidingsniveauHoog` — low/medium/high education-level counts
+- `aantalLeerlingenPrimairOnderwijs` / `aantalLeerlingenVoortgezetOnderwijs` — primary/secondary pupils
+- `aantalStudentenMbo` / `aantalStudentenHbo` / `aantalStudentenWo` — MBO/HBO/WO students
+
+**Healthcare & social services**
+- `huisartsenpraktijkGemiddeldeAfstandInKm` (+ `…GemiddeldAantalBinnen1Km/3Km/5Km`) — GP practice distance / counts
+- `huisartsenpostGemiddeldeAfstandInKm` — distance to GP emergency post
+- `apotheekGemiddeldeAfstandInKm` — distance to pharmacy
+- `ziekenhuisInclBuitenpolikliniekGemAfstInKm` (+ `…GemAantalBinnen5Km/10Km/20Km`) — hospital (incl. outpatient) distance / counts
+- `ziekenhuisExclBuitenpolikliniekGemAfstInKm` (+ within 5/10/20 km) — hospital (excl. outpatient) distance / counts
+- `aantalJongerenMetJeugdzorgInNatura` / `percentageJongerenMetJeugdzorgInNatura` — youth in care (count / %)
+- `aantalWmoClienten` / `aantalWmoClientenPer1000Inwoners` — WMO social-care clients (count / per 1000)
+
+**Transport & vehicles**
+- `personenautosTotaal` — total private cars
+- `personenautosPerHuishouden` — cars per household
+- `personenautosPerKm2` — cars per km²
+- `motortweewielersTotaal` — total motorcycles
+- `aantalPersonenautosMetBrandstofBenzine` — petrol cars
+- `aantalPersonenautosMetOverigeBrandstof` — cars with other fuels
+- `opritHoofdverkeerswegGemiddeldeAfstandInKm` — distance to motorway entrance
+- `treinstationGemiddeldeAfstandInKm` — distance to train station
+- `overstapstationGemiddeldeAfstandInKm` — distance to transit interchange
+- `brandweerkazerneGemiddeldeAfstandInKm` — distance to fire station
+
+**Land use & surface area**
+- `oppervlakteTotaalInHa` — total area (ha)
+- `oppervlakteLandInHa` — land area (ha)
+- `oppervlakteWaterInHa` — water area (ha)
+
+**Green space & nature** (all are *distances* in km, not percentages)
+- `afstandTotOpenbaarGroenTotaal` — distance to public green space
+- `afstandTotParkOfPlantsoen` — distance to park/garden
+- `afstandTotBos` — distance to forest
+- `afstandTotOpenNatuurTerreinTotaal` — distance to open nature area
+- `afstandTotOpenDroogNatuurTerrein` — distance to open dry nature terrain
+- `afstandTotOpenNatNatuurlijkTerrein` — distance to open wet nature terrain
+- `afstandTotSemiopenbaarGroenTotaal` — distance to semi-public green space
+- `afstandTotDagrcreatiefTerrein` — distance to day-recreation area
+- `afstandTotVerblijfsrecreatiefTerrein` — distance to stay-recreation area
+- `afstandTotRecreatiefBinnenwater` — distance to recreational inland water
+- `afstandTotSportterrein` — distance to sports ground
+- `afstandTotVolkstuin` — distance to allotment garden
+- `afstandTotBegraafplaats` — distance to cemetery
+
+**Retail & services** (distance + counts within N km)
+- `groteSupermarktGemiddeldeAfstandInKm` (+ within 1/3/5 km) — large supermarket
+- `winkelsOvDagelijkseLevensmGemAfstInKm` (+ within 1/3/5 km) — daily-goods shops
+- `warenhuisGemiddeldeAfstandInKm` (+ within 5/10/20 km) — department store
+- `cafeGemiddeldeAfstandInKm` (+ within 1/3/5 km) — café
+- `cafetariaGemiddeldeAfstandInKm` (+ within 1/3/5 km) — cafeteria/snack bar
+- `restaurantGemiddeldeAfstandInKm` (+ within 1/3/5 km) — restaurant
+- `hotelGemiddeldeAfstandInKm` (+ within 5/10/20 km) — hotel
+
+**Childcare & schools** (distance + counts within N km)
+- `kinderdagverblijfGemiddeldeAfstandInKm` (+ within 1/3/5 km) — daycare
+- `buitenschoolseOpvangGemAfstandInKm` (+ within 1/3/5 km) — after-school care
+- `basisonderwijsGemiddeldeAfstandInKm` (+ within 1/3/5 km) — primary school
+- `voortgezetOnderwijsGemAfstandInKm` (+ within 3/5/10 km) — secondary school
+- `vmboGemiddeldeAfstandInKm` (+ within 3/5/10 km) — VMBO school
+- `havoVwoGemiddeldeAfstandInKm` (+ within 3/5/10 km) — HAVO/VWO school
+
+**Recreation & leisure** (distance, some with counts within N km)
+- `zwembadGemiddeldeAfstandInKm` — swimming pool
+- `kunstijsbaanGemiddeldeAfstandInKm` — ice rink
+- `bibliotheekGemiddeldeAfstandInKm` — library
+- `poppodiumGemiddeldeAfstandInKm` — pop venue
+- `bioscoopGemiddeldeAfstandInKm` (+ within 5/10/20 km) — cinema
+- `saunaGemiddeldeAfstandInKm` — sauna
+- `zonnebankGemiddeldeAfstandInKm` — tanning salon
+- `attractieparkGemiddeldeAfstandInKm` (+ within 10/20/50 km) — amusement park
+- `theaterGemiddeldeAfstandInKm` (+ within 5/10/20 km) — theatre
+- `gemiddeldeAfstandTotMuseum` (+ `gemiddeldAantalMuseaBinnen5Km/10Km/20Km`) — museum
+
+**Administrative & metadata**
+- `buurtcode` — neighbourhood code
+- `buurtnaam` — neighbourhood name
+- `wijkcode` — district code
+- `gemeentecode` — municipality code
+- `gemeentenaam` — municipality name
+- `meestVoorkomendePostcode` — most common postcode
+- `dekkingspercentage` — coverage percentage
+- `water` — water indicator
+- `jaar` — year (2023)
 
  # Course description
  Welcome to the Multimedia Analytics course 2025/2026
@@ -112,3 +333,64 @@ Complexity: How complex is the problem being addressed? And has the proposed sol
 Implementation: Is there a clear design sketch, interaction scheme, and planning on how to create the system?
 
 Scientific excellence: How innovative is the work with respect to what has already been published on the topic? 
+
+
+
+# text descriptions dataset instructions
+Hi Jonas!
+
+Fri, Jun 12, 2026 at 11:58
+
+If you open the files, you will find multiple folders including a data summary markdown file that
+
+explains the data.
+
+The descriptions are in a .jsonl file of the following format (example). They describe tiles
+
+(regions) and not singular panoramas.
+
+{"patch_row": 27, "patch_col": 406, "canon_row": 5, "canon_col": 81, "quadrant": 11,
+
+"describe_mode": "none", "mllm_output": "A wide expanse of fine, white sand stretches under a
+
+blue sky with scattered clouds, its surface marked by gentle ripples and faint tracks. In the
+
+distance, a low line of green vegetation separates the dunes from a flat horizon where a few
+
+small figures stand. The ground is entirely covered in loose, pale sand with no signs of
+
+pavement, structures, or cultivated earth. A single, narrow path cuts through the foreground,
+
+leading toward the distant treeline. There are no buildings, roads, or human-made objects
+
+visible anywhere in the view. The landscape remains unchanged across all captured
+
+perspectives, showing only variations in camera angle and slight shifts in cloud cover. This is a
+
+natural coastal dune system, devoid of development, preserving its raw, windswept character.”}
+
+You can use canon_col and canon_row to know where they fit within the canonical_tiles.json
+
+splitting of the country, and ‘quadrant’ to know exactly given a splitting. In the following link, you
+
+can download also a tiles.paruqet file that I created which helps you map it in an easier way
+
+(make sure you use your uva email to download it).
+
+tiles.parquet
+
+The description is the “mllm_output”, which is the text that is based on the gsv panoramas.
+
+So now you have numerical values in the raster (gsv _analysis), and panorama images, and text
+
+descriptions.
+
+You have additionally climate data.
+
+I hope this clarifies it.
+
+Most details are in the markdown, and do not hesitate to ask me for further explanations.
+
+Best regards,
+
+Yahia Dalbah
