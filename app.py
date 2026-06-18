@@ -1,6 +1,6 @@
 import json, math, os
 import numpy as np, pandas as pd, plotly.graph_objects as go, plotly.io as pio
-from dash import Dash, dcc, html, dash_table, Input, Output, ctx
+from dash import Dash, dcc, html, dash_table, Input, Output, State, no_update, ctx, exceptions
 
 pio.templates.default = "plotly_white"
 
@@ -85,8 +85,8 @@ def mapfig(i):
                                        bordercolor="#ddd", borderwidth=1, font=dict(size=11)))
 
 
-def spider(i):
-    theta = [LBL[c] for c in CBS]
+def spider(i, cols):
+    theta = [LBL[c] for c in cols]
     f = go.Figure(go.Scatterpolar(r=NORM.iloc[i].tolist() + [NORM.iloc[i, 0]],
                                   theta=theta + [theta[0]], fill="toself",
                                   line_color=ACCENT, fillcolor="rgba(30,136,229,.25)"))
@@ -98,10 +98,14 @@ def spider(i):
 
 app = Dash(__name__)
 app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, children=[
+    dcc.Store(id="current_selection", data=0),
+    dcc.Store(id="current_columns", data=CBS),
     html.Div("Neighbourhood embedding explorer", style={"padding": "10px 16px",
              "fontWeight": "700", "fontSize": "16px", "fontFamily": FONT}),
     html.Div(style={**PAGE, "height": "calc(100vh - 44px)"}, children=[
         html.Div(style={"width": "25%", **CARD, "display": "flex", "flexDirection": "column"}, children=[
+            dcc.Dropdown(LBL, CBS, id="column_select", closeOnSelect=False, multi=True, clearable=True,
+                         placeholder="At least one column must be selected"),
             dash_table.DataTable(id="table",
                 columns=[{"name": "Field", "id": "field"}, {"name": "Value", "id": "value"}],
                 style_as_list_view=True,
@@ -110,7 +114,7 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                 style_cell={"padding": "6px 10px", "border": "none", "fontFamily": FONT,
                             "fontSize": "13px", "textAlign": "left"},
                 style_data_conditional=[{"if": {"row_index": "odd"}, "background": "#fafbfc"},
-                                        {"if": {"column_id": "value"}, "textAlign": "right",
+                                        {"if": {"column_id": "value"},
                                          "fontVariantNumeric": "tabular-nums"}]),
             dcc.Graph(id="spider", style={"height": "340px", "flexShrink": 0})]),
         html.Div(style={"width": "45%", **CARD}, children=[
@@ -129,18 +133,84 @@ def fmt(v):
     return "—" if pd.isna(v) else round(float(v), 1)
 
 
-@app.callback(Output("clip", "figure"), Output("text", "figure"), Output("cbs", "figure"),
-              Output("map", "figure"), Output("spider", "figure"), Output("table", "data"),
-              Input("clip", "clickData"), Input("text", "clickData"), Input("cbs", "clickData"),
-              Input("map", "clickData"))
-def update(*clicks):
+@app.callback(Output("current_selection", "data"),
+              Input("clip", "clickData"), 
+              Input("text", "clickData"), 
+              Input("cbs", "clickData"),
+              Input("map", "clickData"),
+              prevent_initial_call=True)
+def update_current_selection(*clicks):
     cd = dict(zip(["clip", "text", "cbs", "map"], clicks)).get(ctx.triggered_id)
     pt = cd["points"][0] if cd else {}
     # map traces are subsets -> use customdata; Scattergl clicks omit it -> pointIndex (single ordered trace)
     i = int(pt["customdata"]) if pt.get("customdata") is not None else int(pt.get("pointIndex", 0))
-    row = [{"field": k, "value": fmt(df[k][i])} for k in ["name"] + CBS]
-    return scatter("clip", i), scatter("text", i), scatter("cbs", i), mapfig(i), spider(i), row
+    return i
 
+@app.callback(Output("current_columns", "data"),
+              Input("column_select", "value"),
+              prevent_initial_call=True)
+def update_current_columns(value):
+    if not value:
+        raise exceptions.PreventUpdate
+    return value
+
+# Run all sequentially: update when all figures are ready
+@app.callback(Output("clip", "figure"), 
+              Output("text", "figure"), 
+              Output("cbs", "figure"),
+              Output("map", "figure"), 
+              Output("spider", "figure"), 
+              Output("table", "data"),
+              Input("current_selection", "data"),
+              State("current_columns", "data"))
+def update_figure_selections(i, cols):
+    row = [{"field": k, "value": fmt(df[k][i])} for k in ["name"] + cols]
+    return scatter("clip", i), scatter("text", i), scatter("cbs", i), mapfig(i), spider(i, cols), row
+
+@app.callback(Output("spider", "figure", allow_duplicate=True),
+              Output("table", "data", allow_duplicate=True),
+              Input("current_columns", "data"),
+              State("current_selection", "data"),
+              prevent_initial_call=True)
+def update_figure_columns(cols, i):
+    row = [{"field": k, "value": fmt(df[k][i])} for k in ["name"] + cols]
+    return spider(i, cols), row
+
+'''
+# Run all parallel: updates each figure when ready
+@app.callback(Output("clip", "figure"),
+              Input("current_selection", "data"))
+def update_clip_figure(i):
+    return scatter("clip", i)
+
+@app.callback(Output("text", "figure"),
+              Input("current_selection", "data"))
+def update_text_figure(i):
+    return scatter("text", i)
+
+@app.callback(Output("cbs", "figure"),
+              Input("current_selection", "data"))
+def update_cbs_figure(i):
+    return scatter("cbs", i)
+
+@app.callback(Output("map", "figure"),
+              Input("current_selection", "data"))
+def update_map(i):
+    return mapfig(i)
+
+@app.callback(Output("spider", "figure"),
+              Input("current_selection", "data"),
+              Input("current_columns", "data"))
+def update_spider_figure(i, cols):
+    return spider(i, cols)
+
+@app.callback(Output("table", "data"),
+              Input("current_selection", "data"),
+              Input("current_columns", "data"))
+def update_cbs_table(i, cols):
+    row = [{"field": k, "value": fmt(df[k][i])} for k in ["name"] + cols]
+    return row
+'''
 
 if __name__ == "__main__":
     app.run(debug=True)
