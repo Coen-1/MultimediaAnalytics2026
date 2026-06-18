@@ -13,6 +13,7 @@ LBL = {"population": "pop", "income": "income", "home_value": "home €", "densi
        "pct_65plus": "% 65+", "pct_dutch": "% dutch", "cars_per_hh": "cars/hh"}  # short spider axis labels
 NORM = (df[CBS] - df[CBS].min()) / (df[CBS].max() - df[CBS].min() + 1e-9)
 K = 10
+EXTRA_AREA_HIGHLIGHT = 20
 TILE = "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/{z}/{x}/{y}.jpeg"
 STYLE = {"version": 8, "sources": {"p": {"type": "raster", "tiles": [TILE], "tileSize": 256}},
          "layers": [{"id": "p", "type": "raster", "source": "p"}]}
@@ -41,10 +42,10 @@ def _fit(lat, lon):  # one-time center+zoom that frames every point
 CENTER, ZOOM = _fit(df.lat, df.lon)
 
 
-def topk(i, sim):  # K most similar rows to i (excluding itself)
+def topk(i, sim, filter):  # K most similar rows to i (excluding itself)
     if i is None:
         return None
-    return np.argsort(sim[i])[::-1][1:K + 1]
+    return [filter[j] for j in np.argsort(sim[i][filter])[::-1][1:K + 1]]
 
 
 def colors(i, hot, base="#cfd8dc", hotc=SIM_C):
@@ -56,25 +57,41 @@ def colors(i, hot, base="#cfd8dc", hotc=SIM_C):
     return c, s
 
 
-def scatter(space, i):
-    c, s = colors(i, topk(i, SIM[space]))
-    f = go.Figure(go.Scattergl(x=df[f"{space}_x"], y=df[f"{space}_y"], mode="markers",
-                               marker=dict(color=c, size=s, line=dict(width=0.5, color="rgba(0,0,0,.25)")),
-                               customdata=np.arange(len(df)), text=df["name"], hoverinfo="text"))
+def scatter(space, i, filter):
+    c, s = colors(i, topk(i, SIM[space], filter))
+    f = go.Figure(go.Scattergl(x=df[f"{space}_x"].iloc[filter], y=df[f"{space}_y"].iloc[filter], mode="markers",
+                               marker=dict(color=c[filter], size=s[filter], line=dict(width=0.5, color="rgba(0,0,0,.25)")),
+                               customdata=filter, text=df["name"].iloc[filter], hoverinfo="text"))
     axis = dict(visible=False)  # UMAP coords are arbitrary -> hide axes
     return f.update_layout(title=f"{space} embedding (UMAP)", title_font_size=13,
                            xaxis=axis, yaxis=axis, margin=dict(l=6, r=6, t=26, b=6))
 
 
-def mapfig(i):
-    ct, cl = topk(i, SIM["text"]), topk(i, SIM["clip"])
+def mapfig(i, filter):
+    ct, cl = topk(i, SIM["text"], filter), topk(i, SIM["clip"], filter)
+    # if no nearest neighbors / no selected -> set is empty
     i_set = {i} if i is not None else set([])
     ct_set = set(ct) if ct is not None else set([])
     cl_set = set(cl) if cl is not None else set([])
-    groups = [("Other", "rgba(70,70,70,.55)", 6, set(range(len(df))) - cl_set - ct_set - i_set),
+    filter_set = set(filter)
+    groups = [("Other", "rgba(70,70,70,.55)", 6, filter_set - cl_set - ct_set - i_set),
               ("CLIP-similar", CLIP_C, 13, cl_set - ct_set - i_set),
               ("Text-similar", TEXT_C, 13, ct_set - i_set),
               ("Selected", SEL, 20, i_set)]
+    
+    # we have to copy layers of STYLE until "features" is reached to prevent editing the global version
+    style = STYLE.copy()
+    style["sources"] = STYLE["sources"].copy()
+    style["sources"]["b"] = STYLE["sources"]["b"].copy()
+    style["sources"]["b"]["data"] = STYLE["sources"]["b"]["data"].copy()
+    style["sources"]["b"]["data"]["features"] = [STYLE["sources"]["b"]["data"]["features"][j] for j in filter]
+    # maybe nice, otherwise just copy STYLE["layers"]
+    if len(filter) < EXTRA_AREA_HIGHLIGHT:
+        style["layers"] = STYLE["layers"].copy() + [{"id": "b2", "type": "line", "source": "b",
+         "paint": {"line-color": "#30fd29", "line-width": 5, "line-opacity": 0.9}}]
+    else:
+        style["layers"] = STYLE["layers"].copy()
+
     f = go.Figure()
     for name, color, size, idx in groups:
         idx = sorted(idx)
@@ -87,7 +104,7 @@ def mapfig(i):
         f.add_scattermap(lat=d.lat, lon=d.lon, mode="markers", name=name, text=d.name,
                          customdata=idx, hovertemplate="%{text}<extra></extra>",
                          marker=dict(color=color, size=size))
-    return f.update_layout(map=dict(style=STYLE, center=CENTER, zoom=ZOOM), uirevision="keep",
+    return f.update_layout(map=dict(style=style, center=CENTER, zoom=ZOOM), uirevision="keep",
                            margin=dict(l=0, r=0, t=0, b=0),
                            legend=dict(x=0, y=1, bgcolor="rgba(255,255,255,.85)",
                                        bordercolor="#ddd", borderwidth=1, font=dict(size=11)))
@@ -119,12 +136,22 @@ app = Dash(__name__)
 app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, children=[
     dcc.Store(id="current_selection", data=None),
     dcc.Store(id="current_columns", data=CBS),
+    dcc.Store(id="current_filter", data=df.index.to_list()),
+    dcc.Store(id="query_text_selection_start", data=0),
+    dcc.Store(id="query_text_selection_end", data=0),
     html.Div("Neighbourhood embedding explorer", style={"padding": "10px 16px",
              "fontWeight": "700", "fontSize": "16px", "fontFamily": FONT}),
     html.Div(style={**PAGE, "height": "calc(100vh - 44px)"}, children=[
         html.Div(style={"width": "25%", **CARD, "display": "flex", "flexDirection": "column"}, children=[
-            dcc.Dropdown(LBL, CBS, id="column_select", closeOnSelect=False, multi=True, clearable=True,
+            dcc.Dropdown(CBS, CBS, id="column_select", closeOnSelect=False, multi=True, clearable=True,
                          placeholder="At least one column must be selected"),
+            html.Hr(),
+            html.Div("​", id="query_message", style={"color": "black", "fontsize": "14px", "fontFamily": FONT}),
+            html.Div(style={"display": "flex", "flexdirection": "row"}, children=[
+                dcc.Textarea("", id="query_text", rows=1, style={"resize": "none"}),
+                dcc.Button("Filter", id="filter_button")
+            ]),
+            dcc.Dropdown(id="query_columns", options=CBS, value=None),
             dash_table.DataTable(id="table",
                 columns=[{"name": "Field", "id": "field"}, {"name": "Value", "id": "value"}],
                 style_as_list_view=True,
@@ -151,7 +178,7 @@ def fmt(v):
         return v
     return "—" if pd.isna(v) else round(float(v), 1)
 
-
+# keep track of most recently selected item
 @app.callback(Output("current_selection", "data"),
               Input("clip", "clickData"), 
               Input("text", "clickData"), 
@@ -165,6 +192,7 @@ def update_current_selection(*clicks):
     i = int(pt["customdata"]) if pt.get("customdata") is not None else int(pt.get("pointIndex", 0))
     return i
 
+# keep track of selected columns
 @app.callback(Output("current_columns", "data"),
               Input("column_select", "value"),
               prevent_initial_call=True)
@@ -173,7 +201,8 @@ def update_current_columns(value):
         raise exceptions.PreventUpdate
     return value
 
-# Run all sequentially: update when all figures are ready
+# when selection or filter changes update all figures
+# run sequentially: update when all figures are ready
 @app.callback(Output("clip", "figure"), 
               Output("text", "figure"), 
               Output("cbs", "figure"),
@@ -181,10 +210,12 @@ def update_current_columns(value):
               Output("spider", "figure"), 
               Output("table", "data"),
               Input("current_selection", "data"),
+              Input("current_filter", "data"),
               State("current_columns", "data"))
-def update_figure_selections(i, cols):
-    return scatter("clip", i), scatter("text", i), scatter("cbs", i), mapfig(i), spider(i, cols), table(i, cols)
+def update_figure_selections(i, filter, cols):
+    return scatter("clip", i, filter), scatter("text", i, filter), scatter("cbs", i, filter), mapfig(i, filter), spider(i, cols), table(i, cols)
 
+# when selected columns change, update spiderplot and table
 @app.callback(Output("spider", "figure", allow_duplicate=True),
               Output("table", "data", allow_duplicate=True),
               Input("current_columns", "data"),
@@ -193,8 +224,68 @@ def update_figure_selections(i, cols):
 def update_figure_columns(cols, i):
     return spider(i, cols), table(i, cols)
 
+# track most recent selection positions in textarea to enable inserting in the middle
+# - does not keep track of changing selection with arrow keys until n_blur is triggered
+app.clientside_callback(
+    """
+    function(n_clicks, n_blurs) {
+        const textarea = document.querySelector("textarea#query_text")
+        if (!textarea) return [null, null];
+        return [textarea.selectionStart, textarea.selectionEnd];
+    }
+    """,
+    Output("query_text_selection_start", "data"),
+    Output("query_text_selection_end", "data"),
+    Input("query_text", "n_clicks"),
+    Input("query_text", "n_blur"),
+    prevent_initial_call=True)
+
+# when an item in the query dropdown is clicked, replace most recent selection with
+# correct column key and update selection positions
+@app.callback(
+    Output("query_text", "value"),
+    Output("query_text_selection_start", "data", allow_duplicate=True),
+    Output("query_text_selection_end", "data", allow_duplicate=True),
+    Output("query_columns", "value"),
+    Input("query_columns", "value"),
+    State("query_text", "value"),
+    State("query_text_selection_start", "data"),
+    State("query_text_selection_end", "data"),
+    prevent_initial_call=True)
+def replace_query_section(col_name, text, start, end):
+    col_name = col_name or ""
+    s = text[:start] + col_name + text[end:]
+    return s, start+len(col_name), start+len(col_name), ""
+
+# when button is clicked, use current textarea to query dataframe and return valid indices
+@app.callback(
+    Output("current_filter", "data"),
+    Output("current_selection", "data", allow_duplicate=True),
+    Output("query_message", "children"),
+    Output("query_message", "style"),
+    Input("filter_button", "n_clicks"),
+    State("query_text", "value"),
+    State("current_selection", "data"),
+    prevent_initial_call=True)
+def filter_dataframe(n_clicks, query_text, i):
+    try:
+        filter = df.query(query_text).index.to_list() if query_text else df.index.to_list()
+        if len(filter) == 0:
+            return no_update, no_update, "This query has no valid items", {"color": "red"}
+        if len(filter) == len(df):
+            return filter, i, "​", {"color": "black"}
+        if i not in filter:
+            i = None
+        return filter, i, f"Found {len(filter)} items", {"color": "black"}
+        
+    except:
+        return no_update, no_update, "This is not a valid query", {"color": "red"}
+
+
+
 '''
 # Run all parallel: updates each figure when ready
+# No longer up to date
 @app.callback(Output("clip", "figure"),
               Input("current_selection", "data"))
 def update_clip_figure(i):
