@@ -42,12 +42,17 @@ CENTER, ZOOM = _fit(df.lat, df.lon)
 
 
 def topk(i, sim):  # K most similar rows to i (excluding itself)
+    if i is None:
+        return None
     return np.argsort(sim[i])[::-1][1:K + 1]
 
 
 def colors(i, hot, base="#cfd8dc", hotc=SIM_C):
     c = np.full(len(df), base, dtype=object); s = np.full(len(df), 6)
-    c[hot] = hotc; s[hot] = 9; c[i] = SEL; s[i] = 16
+    if hot is not None:
+        c[hot] = hotc; s[hot] = 9
+    if i is not None:
+        c[i] = SEL; s[i] = 16
     return c, s
 
 
@@ -62,11 +67,14 @@ def scatter(space, i):
 
 
 def mapfig(i):
-    ct, cl = set(topk(i, SIM["text"])), set(topk(i, SIM["clip"]))
-    groups = [("Other", "rgba(70,70,70,.55)", 6, set(range(len(df))) - cl - ct - {i}),
-              ("CLIP-similar", CLIP_C, 13, cl - ct - {i}),
-              ("Text-similar", TEXT_C, 13, ct - {i}),
-              ("Selected", SEL, 20, {i})]
+    ct, cl = topk(i, SIM["text"]), topk(i, SIM["clip"])
+    i_set = {i} if i is not None else set([])
+    ct_set = set(ct) if ct is not None else set([])
+    cl_set = set(cl) if cl is not None else set([])
+    groups = [("Other", "rgba(70,70,70,.55)", 6, set(range(len(df))) - cl_set - ct_set - i_set),
+              ("CLIP-similar", CLIP_C, 13, cl_set - ct_set - i_set),
+              ("Text-similar", TEXT_C, 13, ct_set - i_set),
+              ("Selected", SEL, 20, i_set)]
     f = go.Figure()
     for name, color, size, idx in groups:
         idx = sorted(idx)
@@ -87,18 +95,29 @@ def mapfig(i):
 
 def spider(i, cols):
     theta = [LBL[c] for c in cols]
-    f = go.Figure(go.Scatterpolar(r=NORM.iloc[i].tolist() + [NORM.iloc[i, 0]],
-                                  theta=theta + [theta[0]], fill="toself",
+    if i is not None:
+        radius = NORM.iloc[i][cols].tolist() + [NORM.iloc[i][cols[0]]]
+        title = df.name[i]
+    else:
+        radius = [0]*(len(cols)+1)
+        title = 'No area selected'
+    f = go.Figure(go.Scatterpolar(r=radius, theta=theta + [theta[0]], fill="toself",
                                   line_color=ACCENT, fillcolor="rgba(30,136,229,.25)"))
-    return f.update_layout(title=df.name[i], title_font_size=13, title_x=0.5,
+    return f.update_layout(title=title, title_font_size=13, title_x=0.5,
                            polar=dict(radialaxis=dict(visible=True, range=[0, 1]),
                                       angularaxis=dict(tickfont=dict(size=10))),
                            margin=dict(l=55, r=55, t=34, b=24))
 
+def table(i, cols):
+    if i is not None:
+        row = [{"field": k, "value": fmt(df[k][i])} for k in ["name"] + cols]
+    else:
+        row = [{"field": k, "value": "—"} for k in ["name"] + cols]
+    return row
 
 app = Dash(__name__)
 app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, children=[
-    dcc.Store(id="current_selection", data=0),
+    dcc.Store(id="current_selection", data=None),
     dcc.Store(id="current_columns", data=CBS),
     html.Div("Neighbourhood embedding explorer", style={"padding": "10px 16px",
              "fontWeight": "700", "fontSize": "16px", "fontFamily": FONT}),
@@ -164,8 +183,7 @@ def update_current_columns(value):
               Input("current_selection", "data"),
               State("current_columns", "data"))
 def update_figure_selections(i, cols):
-    row = [{"field": k, "value": fmt(df[k][i])} for k in ["name"] + cols]
-    return scatter("clip", i), scatter("text", i), scatter("cbs", i), mapfig(i), spider(i, cols), row
+    return scatter("clip", i), scatter("text", i), scatter("cbs", i), mapfig(i), spider(i, cols), table(i, cols)
 
 @app.callback(Output("spider", "figure", allow_duplicate=True),
               Output("table", "data", allow_duplicate=True),
@@ -173,8 +191,7 @@ def update_figure_selections(i, cols):
               State("current_selection", "data"),
               prevent_initial_call=True)
 def update_figure_columns(cols, i):
-    row = [{"field": k, "value": fmt(df[k][i])} for k in ["name"] + cols]
-    return spider(i, cols), row
+    return spider(i, cols), table(i, cols)
 
 '''
 # Run all parallel: updates each figure when ready
@@ -208,8 +225,7 @@ def update_spider_figure(i, cols):
               Input("current_selection", "data"),
               Input("current_columns", "data"))
 def update_cbs_table(i, cols):
-    row = [{"field": k, "value": fmt(df[k][i])} for k in ["name"] + cols]
-    return row
+    return table(i, cols)
 '''
 
 if __name__ == "__main__":
