@@ -28,6 +28,11 @@ if os.path.exists("buurten.geojson"):  # draw the real CBS buurt boundaries over
 
 ACCENT, SEL, SIM_C = "#1e88e5", "#e53935", "#fb8c00"   # blue / red / orange
 CLIP_C, TEXT_C = "#1e88e5", "#2e7d32"                   # map: blue=CLIP, green=text
+SPIDER_C_OUT = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', 
+                '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52']
+SPIDER_C_IN = ['rgba(122,131,250,0.25)', 'rgba(241,110,88,0.25)', 'rgba(38,211,165,0.25)', 
+               'rgba(183,122,250,0.25)', 'rgba(255,175,114,0.25)', 'rgba(59,217,244,0.25)', 
+               'rgba(255,124,162,0.25)', 'rgba(192,235,147,0.25)', 'rgba(255,166,255,0.25)', 'rgba(254,210,107,0.25)']
 FONT = "Inter, system-ui, sans-serif"
 PAGE = {"display": "flex", "gap": "12px", "padding": "0 12px 12px", "boxSizing": "border-box",
         "background": "#f5f6f8", "fontFamily": FONT}
@@ -43,17 +48,14 @@ CENTER, ZOOM = _fit(df.lat, df.lon)
 
 
 def topk(i, sim, filter):  # K most similar rows to i (excluding itself)
-    if i is None:
-        return None
-    return [filter[j] for j in np.argsort(sim[i][filter])[::-1][1:K + 1]]
+    if len(i) == 1:
+        return [filter[j] for j in np.argsort(sim[i[0]][filter])[::-1][1:K + 1]]
+    return []
 
 
 def colors(i, hot, base="#cfd8dc", hotc=SIM_C):
     c = np.full(len(df), base, dtype=object); s = np.full(len(df), 6)
-    if hot is not None:
-        c[hot] = hotc; s[hot] = 9
-    if i is not None:
-        c[i] = SEL; s[i] = 16
+    c[hot] = hotc; s[hot] = 9; c[i] = SEL; s[i] = 16
     return c, s
 
 
@@ -63,21 +65,33 @@ def scatter(space, i, filter):
                                marker=dict(color=c[filter], size=s[filter], line=dict(width=0.5, color="rgba(0,0,0,.25)")),
                                customdata=filter, text=df["name"].iloc[filter], hoverinfo="text"))
     axis = dict(visible=False)  # UMAP coords are arbitrary -> hide axes
-    return f.update_layout(title=f"{space} embedding (UMAP)", title_font_size=13,
+    return f.update_layout(title=f"{space} embedding (UMAP)", title_font_size=13, clickmode="event+select",
                            xaxis=axis, yaxis=axis, margin=dict(l=6, r=6, t=26, b=6))
 
 
 def mapfig(i, filter):
     ct, cl = topk(i, SIM["text"], filter), topk(i, SIM["clip"], filter)
-    # if no nearest neighbors / no selected -> set is empty
-    i_set = {i} if i is not None else set([])
-    ct_set = set(ct) if ct is not None else set([])
-    cl_set = set(cl) if cl is not None else set([])
-    filter_set = set(filter)
-    groups = [("Other", "rgba(70,70,70,.55)", 6, filter_set - cl_set - ct_set - i_set),
-              ("CLIP-similar", CLIP_C, 13, cl_set - ct_set - i_set),
-              ("Text-similar", TEXT_C, 13, ct_set - i_set),
-              ("Selected", SEL, 20, i_set)]
+ 
+    f = go.Figure()
+    c = np.full(len(df), "rgba(70,70,70,.55)", dtype=object)
+    s = np.full(len(df), 6)
+    c[cl] = CLIP_C; s[cl] = 13; c[ct] = TEXT_C; s[ct] = 13; c[i] = SEL; s[i] = 20
+    highlight = list(cl) + list(ct) + list(i)
+
+    d = df.iloc[highlight]
+    f.add_scattermap(lat=d.lat, lon=d.lon, mode='markers', hoverinfo="skip", showlegend=False, 
+                     selectedpoints=[], unselected=dict(marker=dict(opacity=1)),
+                     marker=dict(color="white", size=s[highlight] + 5))
+    d = df.iloc[filter]
+    f.add_scattermap(lat=d.lat, lon=d.lon, mode='markers', text=d.name, customdata=filter, 
+                     hovertemplate="%{text}<extra></extra>", unselected=dict(marker=dict(opacity=1)),
+                     marker=dict(color=c[filter], size=s[filter]), showlegend=False)
+    
+    # required to add a legend, no points are plotted
+    legend_items = [("CLIP-similar", CLIP_C, 13), ("Text-similar", TEXT_C, 13), ("Selected", SEL, 20)]
+    for item in legend_items:    
+        f.add_scattermap(lat=[None], lon=[None], mode="markers", name=item[0], 
+                         showlegend=True, marker=dict(color=item[1], size=item[2]))
     
     # we have to copy layers of STYLE until "features" is reached to prevent editing the global version
     style = STYLE.copy()
@@ -92,49 +106,48 @@ def mapfig(i, filter):
     else:
         style["layers"] = STYLE["layers"].copy()
 
-    f = go.Figure()
-    for name, color, size, idx in groups:
-        idx = sorted(idx)
-        if not idx:
-            continue
-        d = df.iloc[idx]
-        if name != "Other":   # white halo so the dot reads on the aerial photo
-            f.add_scattermap(lat=d.lat, lon=d.lon, mode="markers", hoverinfo="skip",
-                             showlegend=False, customdata=idx, marker=dict(color="white", size=size + 5))
-        f.add_scattermap(lat=d.lat, lon=d.lon, mode="markers", name=name, text=d.name,
-                         customdata=idx, hovertemplate="%{text}<extra></extra>",
-                         marker=dict(color=color, size=size))
     return f.update_layout(map=dict(style=style, center=CENTER, zoom=ZOOM), uirevision="keep",
-                           margin=dict(l=0, r=0, t=0, b=0),
+                           margin=dict(l=0, r=0, t=0, b=0), clickmode="event+select",
                            legend=dict(x=0, y=1, bgcolor="rgba(255,255,255,.85)",
                                        bordercolor="#ddd", borderwidth=1, font=dict(size=11)))
 
 
 def spider(i, cols):
     theta = [LBL[c] for c in cols]
-    if i is not None:
-        radius = NORM.iloc[i][cols].tolist() + [NORM.iloc[i][cols[0]]]
-        title = df.name[i]
-    else:
+    f = go.Figure()
+    if len(i) == 0:
         radius = [0]*(len(cols)+1)
-        title = 'No area selected'
-    f = go.Figure(go.Scatterpolar(r=radius, theta=theta + [theta[0]], fill="toself",
-                                  line_color=ACCENT, fillcolor="rgba(30,136,229,.25)"))
-    return f.update_layout(title=title, title_font_size=13, title_x=0.5,
+        fig_title = "No area selected"
+        f.add_trace(go.Scatterpolar(r=radius, theta=theta + [theta[0]], fill="toself", 
+                                    line_color="rgba(0,0,0,0)", fillcolor="rgba(0,0,0,0)"))
+    elif len(i) > len(SPIDER_C_OUT):
+        radius = [0]*(len(cols)+1)
+        fig_title = "Cannot show this many areas"
+        f.add_trace(go.Scatterpolar(r=radius, theta=theta + [theta[0]], fill="toself", 
+                                    line_color="rgba(0,0,0,0)", fillcolor="rgba(0,0,0,0)"))
+    else:
+        fig_title = "Comparing each area"
+        for ci, item in enumerate(i):
+            color_out = SPIDER_C_OUT[ci]
+            color_in = SPIDER_C_IN[ci]
+            radius = NORM.iloc[item][cols].tolist() + [NORM.iloc[item][cols[0]]]
+            title = df.name[item]
+            f.add_trace(go.Scatterpolar(r=radius, theta=theta + [theta[0]], fill="toself",
+                                  line_color=color_out, fillcolor=color_in, name=title))
+    
+    return f.update_layout(title=fig_title, title_font_size=13, title_x=0.5,
                            polar=dict(radialaxis=dict(visible=True, range=[0, 1]),
                                       angularaxis=dict(tickfont=dict(size=10))),
-                           margin=dict(l=55, r=55, t=34, b=24))
+                           margin=dict(l=55, r=55, t=34, b=24), showlegend=False)
 
 def table(i, cols):
-    if i is not None:
-        row = [{"field": k, "value": fmt(df[k][i])} for k in ["name"] + cols]
-    else:
-        row = [{"field": k, "value": "—"} for k in ["name"] + cols]
-    return row
+    columns = [{"name": "Area", "id": "field"}] + [{"name": fmt(df["name"][idx]), "id": f"area_{idx}"} for idx in i]
+    rows = [{"field": k, **{f"area_{idx}": fmt(df[k][idx]) for idx in i}} for k in cols]
+    return rows, columns
 
 app = Dash(__name__)
 app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, children=[
-    dcc.Store(id="current_selection", data=None),
+    dcc.Store(id="current_selection", data=[]),
     dcc.Store(id="current_columns", data=CBS),
     dcc.Store(id="current_filter", data=df.index.to_list()),
     dcc.Store(id="query_text_selection_start", data=0),
@@ -153,7 +166,7 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
             ]),
             dcc.Dropdown(id="query_columns", options=CBS, value=None),
             dash_table.DataTable(id="table",
-                columns=[{"name": "Field", "id": "field"}, {"name": "Value", "id": "value"}],
+                columns=[{"name": "Field", "id": "field"}],
                 style_as_list_view=True,
                 style_header={"background": "#f0f2f5", "fontWeight": "600", "border": "none",
                               "fontFamily": FONT, "padding": "6px 10px"},
@@ -161,7 +174,8 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                             "fontSize": "13px", "textAlign": "left"},
                 style_data_conditional=[{"if": {"row_index": "odd"}, "background": "#fafbfc"},
                                         {"if": {"column_id": "value"},
-                                         "fontVariantNumeric": "tabular-nums"}]),
+                                         "fontVariantNumeric": "tabular-nums"}],
+                style_table={'overflowX': 'scroll'}),
             dcc.Graph(id="spider", style={"height": "340px", "flexShrink": 0})]),
         html.Div(style={"width": "45%", **CARD}, children=[
             dcc.Graph(id="map", style={"height": "100%"})]),
@@ -178,18 +192,25 @@ def fmt(v):
         return v
     return "—" if pd.isna(v) else round(float(v), 1)
 
+# TODO: some weird stuff happens when switching selection between plots
+# - both picking a single point and lasso/box overwrite selection -> therefore are fine
+# - but shift+clicking to add a point in a plot remembers last selection in that specific plot
+# - not global last selection so that can lead to weird behaviour
 # keep track of most recently selected item
 @app.callback(Output("current_selection", "data"),
-              Input("clip", "clickData"), 
-              Input("text", "clickData"), 
-              Input("cbs", "clickData"),
-              Input("map", "clickData"),
+              Input("clip", "selectedData"), 
+              Input("text", "selectedData"), 
+              Input("cbs", "selectedData"),
+              Input("map", "selectedData"),
               prevent_initial_call=True)
 def update_current_selection(*clicks):
     cd = dict(zip(["clip", "text", "cbs", "map"], clicks)).get(ctx.triggered_id)
-    pt = cd["points"][0] if cd else {}
-    # map traces are subsets -> use customdata; Scattergl clicks omit it -> pointIndex (single ordered trace)
-    i = int(pt["customdata"]) if pt.get("customdata") is not None else int(pt.get("pointIndex", 0))
+    pts = cd["points"] if cd else []
+    # for some reason box and lasso select trigger the callback twice 
+    # the second time with an empty box / lasso -> so no update to prevent overwrite
+    if "range" not in cd.keys() and "lassoPoints" not in cd.keys() and len(pts) == 0:
+        raise exceptions.PreventUpdate
+    i = [int(pt["customdata"]) for pt in pts]
     return i
 
 # keep track of selected columns
@@ -209,11 +230,13 @@ def update_current_columns(value):
               Output("map", "figure"), 
               Output("spider", "figure"), 
               Output("table", "data"),
+              Output("table", "columns"),
               Input("current_selection", "data"),
               Input("current_filter", "data"),
               State("current_columns", "data"))
 def update_figure_selections(i, filter, cols):
-    return scatter("clip", i, filter), scatter("text", i, filter), scatter("cbs", i, filter), mapfig(i, filter), spider(i, cols), table(i, cols)
+    return scatter("clip", i, filter), scatter("text", i, filter), scatter("cbs", i, filter), \
+            mapfig(i, filter), spider(i, cols), *table(i, cols)
 
 # when selected columns change, update spiderplot and table
 @app.callback(Output("spider", "figure", allow_duplicate=True),
@@ -274,50 +297,11 @@ def filter_dataframe(n_clicks, query_text, i):
             return no_update, no_update, "This query has no valid items", {"color": "red"}
         if len(filter) == len(df):
             return filter, i, "​", {"color": "black"}
-        if i not in filter:
-            i = None
+        i = [idx for idx in i if idx in filter]
         return filter, i, f"Found {len(filter)} items", {"color": "black"}
         
     except:
         return no_update, no_update, "This is not a valid query", {"color": "red"}
-
-
-
-'''
-# Run all parallel: updates each figure when ready
-# No longer up to date
-@app.callback(Output("clip", "figure"),
-              Input("current_selection", "data"))
-def update_clip_figure(i):
-    return scatter("clip", i)
-
-@app.callback(Output("text", "figure"),
-              Input("current_selection", "data"))
-def update_text_figure(i):
-    return scatter("text", i)
-
-@app.callback(Output("cbs", "figure"),
-              Input("current_selection", "data"))
-def update_cbs_figure(i):
-    return scatter("cbs", i)
-
-@app.callback(Output("map", "figure"),
-              Input("current_selection", "data"))
-def update_map(i):
-    return mapfig(i)
-
-@app.callback(Output("spider", "figure"),
-              Input("current_selection", "data"),
-              Input("current_columns", "data"))
-def update_spider_figure(i, cols):
-    return spider(i, cols)
-
-@app.callback(Output("table", "data"),
-              Input("current_selection", "data"),
-              Input("current_columns", "data"))
-def update_cbs_table(i, cols):
-    return table(i, cols)
-'''
 
 if __name__ == "__main__":
     app.run(debug=True)
