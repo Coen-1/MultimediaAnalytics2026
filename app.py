@@ -17,8 +17,8 @@ EXTRA_AREA_HIGHLIGHT = 20
 TILE = "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/{z}/{x}/{y}.jpeg"
 STYLE = {"version": 8, "sources": {"p": {"type": "raster", "tiles": [TILE], "tileSize": 256}},
          "layers": [{"id": "p", "type": "raster", "source": "p"}]}
-if os.path.exists("buurten.geojson"):  # draw the real CBS buurt boundaries over the aerial photo
-    STYLE["sources"]["b"] = {"type": "geojson", "data": json.load(open("buurten.geojson"))}
+if os.path.exists("assets/buurten.geojson"):  # draw the real CBS buurt boundaries over the aerial photo
+    STYLE["sources"]["b"] = {"type": "geojson", "data": "/assets/buurten.geojson"}
     STYLE["layers"] += [  # cased line: dark halo under a bright line so borders read over any imagery
         {"id": "b-case", "type": "line", "source": "b",
          "paint": {"line-color": "#1a1a1a", "line-width": 3, "line-opacity": 0.45,
@@ -46,18 +46,20 @@ def _fit(lat, lon):  # one-time center+zoom that frames every point
     return c, math.log2(360 / max(span, 1e-6)) - 1.2          # -1.2 = padding fudge
 CENTER, ZOOM = _fit(df.lat, df.lon)
 
-
 def topk(i, sim, filter):  # K most similar rows to i (excluding itself)
     if len(i) == 1:
         return [filter[j] for j in np.argsort(sim[i[0]][filter])[::-1][1:K + 1]]
     return []
-
 
 def colors(i, hot, base="#cfd8dc", hotc=SIM_C):
     c = np.full(len(df), base, dtype=object); s = np.full(len(df), 6)
     c[hot] = hotc; s[hot] = 9; c[i] = SEL; s[i] = 16
     return c, s
 
+def fmt(v):
+    if isinstance(v, str):
+        return v
+    return "—" if pd.isna(v) else round(float(v), 1)
 
 def scatter(space, i, filter):
     c, s = colors(i, topk(i, SIM[space], filter))
@@ -68,7 +70,6 @@ def scatter(space, i, filter):
     return f.update_layout(title=f"{space} embedding (UMAP)", title_font_size=13, clickmode="event+select",
                            xaxis=axis, yaxis=axis, margin=dict(l=6, r=6, t=26, b=6))
 
-
 def mapfig(i, filter):
     ct, cl = topk(i, SIM["text"], filter), topk(i, SIM["clip"], filter)
  
@@ -76,7 +77,7 @@ def mapfig(i, filter):
     c = np.full(len(df), "rgba(70,70,70,.55)", dtype=object)
     s = np.full(len(df), 6)
     c[cl] = CLIP_C; s[cl] = 13; c[ct] = TEXT_C; s[ct] = 13; c[i] = SEL; s[i] = 20
-    highlight = list(cl) + list(ct) + list(i)
+    highlight = cl + ct + i
 
     d = df.iloc[highlight]
     f.add_scattermap(lat=d.lat, lon=d.lon, mode='markers', hoverinfo="skip", showlegend=False, 
@@ -93,24 +94,27 @@ def mapfig(i, filter):
         f.add_scattermap(lat=[None], lon=[None], mode="markers", name=item[0], 
                          showlegend=True, marker=dict(color=item[1], size=item[2]))
     
-    # we have to copy layers of STYLE until "features" is reached to prevent editing the global version
     style = STYLE.copy()
-    style["sources"] = STYLE["sources"].copy()
-    style["sources"]["b"] = STYLE["sources"]["b"].copy()
-    style["sources"]["b"]["data"] = STYLE["sources"]["b"]["data"].copy()
-    style["sources"]["b"]["data"]["features"] = [STYLE["sources"]["b"]["data"]["features"][j] for j in filter]
-    # maybe nice, otherwise just copy STYLE["layers"]
-    if len(filter) < EXTRA_AREA_HIGHLIGHT:
-        style["layers"] = STYLE["layers"].copy() + [{"id": "b2", "type": "line", "source": "b",
-         "paint": {"line-color": "#30fd29", "line-width": 5, "line-opacity": 0.9}}]
-    else:
+    if os.path.exists("assets/buurten.geojson"):
         style["layers"] = STYLE["layers"].copy()
+
+        # If threshold is reached add extra highlight to areas
+        if len(filter) < EXTRA_AREA_HIGHLIGHT:
+            style["layers"] += [{"id": "b2", "type": "line", "source": "b",
+            "paint": {"line-color": "#30fd29", "line-width": 5, "line-opacity": 0.9}}]
+        
+        # Find buurtcodes from df -> only show outlines of areas in filter_ids
+        filter_ids = df["code"].iloc[filter]
+        maplibre_filter = ["in", ["get", "code"], ["literal", filter_ids]]
+        style["layers"] = [
+            {**layer, "filter": maplibre_filter} if layer["id"] in ("b", "b-case", "b2") else layer
+            for layer in style["layers"]
+        ]
 
     return f.update_layout(map=dict(style=style, center=CENTER, zoom=ZOOM), uirevision="keep",
                            margin=dict(l=0, r=0, t=0, b=0), clickmode="event+select",
                            legend=dict(x=0, y=1, bgcolor="rgba(255,255,255,.85)",
                                        bordercolor="#ddd", borderwidth=1, font=dict(size=11)))
-
 
 def spider(i, cols):
     theta = [LBL[c] for c in cols]
@@ -187,11 +191,6 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
 ])
 
 
-def fmt(v):
-    if isinstance(v, str):
-        return v
-    return "—" if pd.isna(v) else round(float(v), 1)
-
 # TODO: some weird stuff happens when switching selection between plots
 # - both picking a single point and lasso/box overwrite selection -> therefore are fine
 # - but shift+clicking to add a point in a plot remembers last selection in that specific plot
@@ -205,12 +204,16 @@ def fmt(v):
               prevent_initial_call=True)
 def update_current_selection(*clicks):
     cd = dict(zip(["clip", "text", "cbs", "map"], clicks)).get(ctx.triggered_id)
-    pts = cd["points"] if cd else []
+    if cd is None:
+        raise exceptions.PreventUpdate
+    pts = cd["points"]
+
     # for some reason box and lasso select trigger the callback twice 
     # the second time with an empty box / lasso -> so no update to prevent overwrite
     if "range" not in cd.keys() and "lassoPoints" not in cd.keys() and len(pts) == 0:
         raise exceptions.PreventUpdate
-    i = [int(pt["customdata"]) for pt in pts]
+    
+    i = [int(pt["customdata"]) for pt in pts if "customdata" in pt]
     return i
 
 # keep track of selected columns
