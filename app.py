@@ -4,8 +4,8 @@ from dash import Dash, dcc, html, dash_table, Input, Output, State, no_update, c
 
 pio.templates.default = "plotly_white"
 
-df = pd.read_parquet("data.parquet")
-SIM = {"clip": np.load("sim_clip.npy"), "text": np.load("sim_text.npy"), "cbs": np.load("sim_cbs.npy")}
+df = pd.read_parquet("assets/data.parquet")
+SIM = {"clip": np.load("assets/sim_clip.npy"), "text": np.load("assets/sim_text.npy"), "cbs": np.load("assets/sim_cbs.npy")}
 CBS = ["population", "income", "home_value", "density", "household_size",
        "pct_owner", "pct_single_pers", "pct_65plus", "pct_dutch", "cars_per_hh"]
 LBL = {"population": "pop", "income": "income", "home_value": "home €", "density": "density",
@@ -13,19 +13,11 @@ LBL = {"population": "pop", "income": "income", "home_value": "home €", "densi
        "pct_65plus": "% 65+", "pct_dutch": "% dutch", "cars_per_hh": "cars/hh"}  # short spider axis labels
 NORM = (df[CBS] - df[CBS].min()) / (df[CBS].max() - df[CBS].min() + 1e-9)
 K = 10
+TILE_TYPES = {"satellite": {"tiles": "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/{z}/{x}/{y}.jpeg",
+                            "attribution": "TBD"},
+              "streetview": {"tiles": "https://tile.openstreetmap.org/{z}/{x}/{y}.png", 
+                             "attribution": "© OpenStreetMap contributors"}}
 EXTRA_AREA_HIGHLIGHT = 20
-TILE = "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/{z}/{x}/{y}.jpeg"
-STYLE = {"version": 8, "sources": {"p": {"type": "raster", "tiles": [TILE], "tileSize": 256}},
-         "layers": [{"id": "p", "type": "raster", "source": "p"}]}
-if os.path.exists("assets/buurten.geojson"):  # draw the real CBS buurt boundaries over the aerial photo
-    STYLE["sources"]["b"] = {"type": "geojson", "data": "/assets/buurten.geojson"}
-    STYLE["layers"] += [  # cased line: dark halo under a bright line so borders read over any imagery
-        {"id": "b-case", "type": "line", "source": "b",
-         "paint": {"line-color": "#1a1a1a", "line-width": 3, "line-opacity": 0.45,
-                   "line-blur": 0.5}},
-        {"id": "b", "type": "line", "source": "b",
-         "paint": {"line-color": "#ffd54f", "line-width": 1.4, "line-opacity": 0.9}}]
-
 ACCENT, SEL, SIM_C = "#1e88e5", "#e53935", "#fb8c00"   # blue / red / orange
 CLIP_C, TEXT_C = "#1e88e5", "#2e7d32"                   # map: blue=CLIP, green=text
 SPIDER_C_OUT = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', 
@@ -70,7 +62,7 @@ def scatter(space, i, filter):
     return f.update_layout(title=f"{space} embedding (UMAP)", title_font_size=13, clickmode="event+select",
                            xaxis=axis, yaxis=axis, margin=dict(l=6, r=6, t=26, b=6))
 
-def mapfig(i, filter):
+def mapfig(i, filter, map_style):
     ct, cl = topk(i, SIM["text"], filter), topk(i, SIM["clip"], filter)
  
     f = go.Figure()
@@ -94,23 +86,28 @@ def mapfig(i, filter):
         f.add_scattermap(lat=[None], lon=[None], mode="markers", name=item[0], 
                          showlegend=True, marker=dict(color=item[1], size=item[2]))
     
-    style = STYLE.copy()
-    if os.path.exists("assets/buurten.geojson"):
-        style["layers"] = STYLE["layers"].copy()
+    # find buurtcodes from df -> use filter to only show outlines of areas in filter_ids
+    filter_ids = df["code"].iloc[filter]
 
-        # If threshold is reached add extra highlight to areas
+    # build style from scratch, easier than copying & editing most properties
+    style = {"version": 8, "sources": {"p": {"type": "raster", "tiles": [TILE_TYPES[map_style]["tiles"]], 
+                                             "tileSize": 256, "attribution": TILE_TYPES[map_style]["attribution"]}},
+            "layers": [{"id": "p", "type": "raster", "source": "p"}]}
+    if os.path.exists("assets/buurten.geojson"):  # draw the real CBS buurt boundaries over the aerial photo
+        style["sources"]["b"] = {"type": "geojson", "data": "/assets/buurten.geojson"}
+        style["layers"] += [  # cased line: dark halo under a bright line so borders read over any imagery
+            {"id": "b-case", "type": "line", "source": "b",
+            "paint": {"line-color": "#1a1a1a", "line-width": 3, "line-opacity": 0.45,
+                    "line-blur": 0.5}, "filter":["in", ["get", "code"], ["literal", filter_ids]]},
+            {"id": "b", "type": "line", "source": "b",
+            "paint": {"line-color": "#ffd54f", "line-width": 1.4, "line-opacity": 0.9},
+            "filter":["in", ["get", "code"], ["literal", filter_ids]]}]
+        
         if len(filter) < EXTRA_AREA_HIGHLIGHT:
             style["layers"] += [{"id": "b2", "type": "line", "source": "b",
-            "paint": {"line-color": "#30fd29", "line-width": 5, "line-opacity": 0.9}}]
-        
-        # Find buurtcodes from df -> only show outlines of areas in filter_ids
-        filter_ids = df["code"].iloc[filter]
-        maplibre_filter = ["in", ["get", "code"], ["literal", filter_ids]]
-        style["layers"] = [
-            {**layer, "filter": maplibre_filter} if layer["id"] in ("b", "b-case", "b2") else layer
-            for layer in style["layers"]
-        ]
-
+            "paint": {"line-color": "#30fd29", "line-width": 5, "line-opacity": 0.9},
+            "filter":["in", ["get", "code"], ["literal", filter_ids]]}] 
+    
     return f.update_layout(map=dict(style=style, center=CENTER, zoom=ZOOM), uirevision="keep",
                            margin=dict(l=0, r=0, t=0, b=0), clickmode="event+select",
                            legend=dict(x=0, y=1, bgcolor="rgba(255,255,255,.85)",
@@ -160,15 +157,16 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
              "fontWeight": "700", "fontSize": "16px", "fontFamily": FONT}),
     html.Div(style={**PAGE, "height": "calc(100vh - 44px)"}, children=[
         html.Div(style={"width": "25%", **CARD, "display": "flex", "flexDirection": "column"}, children=[
-            dcc.Dropdown(CBS, CBS, id="column_select", closeOnSelect=False, multi=True, clearable=True,
-                         placeholder="At least one column must be selected"),
-            html.Hr(),
             html.Div("​", id="query_message", style={"color": "black", "fontsize": "14px", "fontFamily": FONT}),
             html.Div(style={"display": "flex", "flexdirection": "row"}, children=[
-                dcc.Textarea("", id="query_text", rows=1, style={"resize": "none"}),
+                dcc.Textarea("", id="query_text", rows=1, style={"resize": "none"}, placeholder="Enter queries here: "),
                 dcc.Button("Filter", id="filter_button")
             ]),
-            dcc.Dropdown(id="query_columns", options=CBS, value=None),
+            dcc.Dropdown(id="query_columns", options=CBS, value=None, 
+                         placeholder="Use the dropdown to insert attributes in the query"),
+            html.Hr(style={"width": "100%", "borderTop": "1px solid black"}),
+            dcc.Dropdown(CBS, CBS, id="column_select", closeOnSelect=False, multi=True, clearable=True,
+                         placeholder="At least one column must be selected"),
             dash_table.DataTable(id="table",
                 columns=[{"name": "Field", "id": "field"}],
                 style_as_list_view=True,
@@ -181,9 +179,13 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                                          "fontVariantNumeric": "tabular-nums"}],
                 style_table={'overflowX': 'scroll'}),
             dcc.Graph(id="spider", style={"height": "340px", "flexShrink": 0})]),
-        html.Div(style={"width": "45%", **CARD}, children=[
-            dcc.Graph(id="map", style={"height": "100%"})]),
-        html.Div(style={"width": "30%", **CARD, "display": "flex", "flexDirection": "column"}, children=[
+        html.Div(style={"width": "45%", **CARD, "display": "flex", "flexDirection": "column"}, children=[
+            dcc.Graph(id="map", style={"height": "100%"}),
+            html.Div(dcc.RadioItems({"satellite": "Satellite map", "streetview": "Streetview map"}, 'satellite', id="map_style"),
+                     style={"position":"absolute", "top":"91%", "left":"26.8%", "backgroundColor":"rgba(255, 255, 255, 0.6)",
+                            "padding": "4px 6px"})
+        ]),
+        html.Div(style={"width": "30%", **CARD, "display": "flex", "flexDirection": "column", "position":"relative"}, children=[
             dcc.Graph(id="clip", style={"flex": 1}),
             dcc.Graph(id="text", style={"flex": 1}),
             dcc.Graph(id="cbs", style={"flex": 1})]),
@@ -236,10 +238,11 @@ def update_current_columns(value):
               Output("table", "columns"),
               Input("current_selection", "data"),
               Input("current_filter", "data"),
-              State("current_columns", "data"))
-def update_figure_selections(i, filter, cols):
+              State("current_columns", "data"),
+              State("map_style", "value"))
+def update_figure_selections(i, filter, cols, map_style):
     return scatter("clip", i, filter), scatter("text", i, filter), scatter("cbs", i, filter), \
-            mapfig(i, filter), spider(i, cols), *table(i, cols)
+            mapfig(i, filter, map_style), spider(i, cols), *table(i, cols)
 
 # when selected columns change, update spiderplot and table
 @app.callback(Output("spider", "figure", allow_duplicate=True),
@@ -249,6 +252,15 @@ def update_figure_selections(i, filter, cols):
               prevent_initial_call=True)
 def update_figure_columns(cols, i):
     return spider(i, cols), table(i, cols)
+
+# when map style changes update map
+@app.callback(Output("map", "figure", allow_duplicate=True),
+              Input("map_style", "value"),
+              State("current_selection", "data"),
+              State("current_filter", "data"),
+              prevent_initial_call=True)
+def update_map_style(map_style, i, filter):
+    return mapfig(i, filter, map_style)
 
 # track most recent selection positions in textarea to enable inserting in the middle
 # - does not keep track of changing selection with arrow keys until n_blur is triggered
@@ -281,7 +293,7 @@ app.clientside_callback(
 def replace_query_section(col_name, text, start, end):
     col_name = col_name or ""
     s = text[:start] + col_name + text[end:]
-    return s, start+len(col_name), start+len(col_name), ""
+    return s, start+len(col_name), start+len(col_name), None
 
 # when button is clicked, use current textarea to query dataframe and return valid indices
 @app.callback(
