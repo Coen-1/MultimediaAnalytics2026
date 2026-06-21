@@ -19,7 +19,7 @@ TILE_TYPES = {"satellite": {"tiles": "https://service.pdok.nl/hwh/luchtfotorgb/w
                              "attribution": "© OpenStreetMap contributors"}}
 EXTRA_AREA_HIGHLIGHT = 20
 ACCENT, SEL, SIM_C = "#1e88e5", "#e53935", "#fb8c00"   # blue / red / orange
-CLIP_C, TEXT_C = "#1e88e5", "#2e7d32"                   # map: blue=CLIP, green=text
+CLIP_C, TEXT_C, CBS_C = "#1e88e5", "#2e7d32", "#b621aa"                  # map: blue=CLIP, green=text, 
 SPIDER_C_OUT = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', 
                 '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52']
 SPIDER_C_IN = ['rgba(122,131,250,0.25)', 'rgba(241,110,88,0.25)', 'rgba(38,211,165,0.25)', 
@@ -60,16 +60,16 @@ def scatter(space, i, filter):
                                customdata=filter, text=df["name"].iloc[filter], hoverinfo="text"))
     axis = dict(visible=False)  # UMAP coords are arbitrary -> hide axes
     return f.update_layout(title=f"{space} embedding (UMAP)", title_font_size=13, clickmode="event+select",
-                           xaxis=axis, yaxis=axis, margin=dict(l=6, r=6, t=26, b=6))
+                           xaxis=axis, yaxis=axis, margin=dict(l=6, r=6, t=26, b=6), dragmode="pan")
 
 def mapfig(i, filter, map_style):
-    ct, cl = topk(i, SIM["text"], filter), topk(i, SIM["clip"], filter)
+    ct, cl, cb = topk(i, SIM["text"], filter), topk(i, SIM["clip"], filter), topk(i, SIM["cbs"], filter)
  
     f = go.Figure()
     c = np.full(len(df), "rgba(70,70,70,.55)", dtype=object)
     s = np.full(len(df), 6)
-    c[cl] = CLIP_C; s[cl] = 13; c[ct] = TEXT_C; s[ct] = 13; c[i] = SEL; s[i] = 20
-    highlight = cl + ct + i
+    c[cb] = CBS_C; s[cb] = 13; c[cl] = CLIP_C; s[cl] = 13; c[ct] = TEXT_C; s[ct] = 13; c[i] = SEL; s[i] = 20
+    highlight = cl + ct + cb + i
 
     d = df.iloc[highlight]
     f.add_scattermap(lat=d.lat, lon=d.lon, mode='markers', hoverinfo="skip", showlegend=False, 
@@ -81,7 +81,7 @@ def mapfig(i, filter, map_style):
                      marker=dict(color=c[filter], size=s[filter]), showlegend=False)
     
     # required to add a legend, no points are plotted
-    legend_items = [("CLIP-similar", CLIP_C, 13), ("Text-similar", TEXT_C, 13), ("Selected", SEL, 20)]
+    legend_items = [("CBS-similar", CBS_C, 13), ("CLIP-similar", CLIP_C, 13), ("Text-similar", TEXT_C, 13), ("Selected", SEL, 20)]
     for item in legend_items:    
         f.add_scattermap(lat=[None], lon=[None], mode="markers", name=item[0], 
                          showlegend=True, marker=dict(color=item[1], size=item[2]))
@@ -186,9 +186,9 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                             "padding": "4px 6px"})
         ]),
         html.Div(style={"width": "30%", **CARD, "display": "flex", "flexDirection": "column", "position":"relative"}, children=[
-            dcc.Graph(id="clip", style={"flex": 1}),
-            dcc.Graph(id="text", style={"flex": 1}),
-            dcc.Graph(id="cbs", style={"flex": 1})]),
+            dcc.Graph(id="clip", style={"flex": 1}, config={"scrollZoom":True}),
+            dcc.Graph(id="text", style={"flex": 1}, config={"scrollZoom":True}),
+            dcc.Graph(id="cbs", style={"flex": 1}, config={"scrollZoom":True})]),
     ]),
 ])
 
