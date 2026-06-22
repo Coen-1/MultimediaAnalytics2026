@@ -121,19 +121,43 @@ def mapfig(i, filter, map_style):
     ct, cl, cb = topk(i, SIM["text"], filter), topk(i, SIM["clip"], filter), topk(i, SIM["cbs"], filter)
  
     f = go.Figure()
-    c = np.full(len(df), "rgba(70,70,70,.55)", dtype=object)
-    s = np.full(len(df), 6)
-    c[cb] = CBS_C; s[cb] = 13; c[cl] = CLIP_C; s[cl] = 13; c[ct] = TEXT_C; s[ct] = 13; c[i] = SEL; s[i] = 20
-    highlight = cl + ct + cb + i
+    if os.path.exists("assets/buurten.geojson"):  # filled, click-anywhere neighbourhood polygons (drawn first = under the dots)
+        sel = set(i)                               # selected areas get a translucent red fill; the rest stay transparent but still clickable
+        f.add_choroplethmap(geojson="/assets/buurten.geojson", featureidkey="properties.code",
+                            locations=df["code"].iloc[filter], customdata=filter, text=df["name"].iloc[filter],
+                            z=[1.0 if idx in sel else 0.0 for idx in filter], zmin=0, zmax=1,
+                            colorscale=[[0, "rgba(229,57,53,0)"], [1, "rgba(229,57,53,1)"]], showscale=False,
+                            marker=dict(opacity=0.5, line=dict(width=0)),
+                            selected=dict(marker=dict(opacity=0.5)), unselected=dict(marker=dict(opacity=0.5)),
+                            hovertemplate="%{text}<extra></extra>", showlegend=False)
 
-    d = df.iloc[highlight]
-    f.add_scattermap(lat=d.lat, lon=d.lon, mode='markers', hoverinfo="skip", showlegend=False, 
-                     selectedpoints=[], unselected=dict(marker=dict(opacity=1)),
-                     marker=dict(color="white", size=s[highlight] + 5))
+    # base dot for every neighbourhood in the filter (carries the hover label + click customdata)
     d = df.iloc[filter]
-    f.add_scattermap(lat=d.lat, lon=d.lon, mode='markers', text=d.name, customdata=filter, 
+    f.add_scattermap(lat=d.lat, lon=d.lon, mode='markers', text=d.name, customdata=filter,
                      hovertemplate="%{text}<extra></extra>", unselected=dict(marker=dict(opacity=1)),
-                     marker=dict(color=c[filter], size=s[filter]), showlegend=False)
+                     marker=dict(color="rgba(70,70,70,.55)", size=6), showlegend=False)
+
+    # a neighbourhood can be top-K similar in several facets at once. drawing one colour per node would
+    # let the last facet overwrite the others, so instead draw each facet as its own concentric ring
+    # (largest underneath, smallest on top) -> overlapping nodes keep every matching colour visible.
+    rings = [(cb, CBS_C, 20), (cl, CLIP_C, 14), (ct, TEXT_C, 9)]   # outer -> inner
+    halo = cb + cl + ct + i
+    if halo:  # white halo behind the rings/selection keeps them readable over any imagery
+        d = df.iloc[halo]
+        f.add_scattermap(lat=d.lat, lon=d.lon, mode='markers', hoverinfo="skip", showlegend=False,
+                         selectedpoints=[], unselected=dict(marker=dict(opacity=1)),
+                         marker=dict(color="white", size=25))
+    for nodes, color, size in rings:
+        if nodes:
+            d = df.iloc[nodes]
+            f.add_scattermap(lat=d.lat, lon=d.lon, mode='markers', hoverinfo="skip", showlegend=False,
+                             selectedpoints=[], unselected=dict(marker=dict(opacity=1)),
+                             marker=dict(color=color, size=size))
+    if i:  # selected neighbourhood(s) on top
+        d = df.iloc[i]
+        f.add_scattermap(lat=d.lat, lon=d.lon, mode='markers', hoverinfo="skip", showlegend=False,
+                         selectedpoints=[], unselected=dict(marker=dict(opacity=1)),
+                         marker=dict(color=SEL, size=20))
     
     # required to add a legend, no points are plotted
     legend_items = [("CBS-similar", CBS_C, 13), ("CLIP-similar", CLIP_C, 13), ("Text-similar", TEXT_C, 13), ("Selected", SEL, 20)]
@@ -205,6 +229,7 @@ app = Dash(__name__, external_stylesheets=[
     "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"])
 app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, children=[
     dcc.Store(id="current_selection", data=[]),
+    dcc.Store(id="map_click"),   # {points, shift} from a map click, filled clientside so we know if shift was held
     dcc.Store(id="current_columns", data=CBS),
     dcc.Store(id="current_filter", data=df.index.to_list()),
     dcc.Store(id="query_text_selection_start", data=0),
@@ -296,24 +321,57 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
 # - not global last selection so that can lead to weird behaviour
 # keep track of most recently selected item
 @app.callback(Output("current_selection", "data"),
-              Input("clip", "selectedData"), 
-              Input("text", "selectedData"), 
+              Input("clip", "selectedData"),
+              Input("text", "selectedData"),
               Input("cbs", "selectedData"),
-              Input("map", "selectedData"),
+              Input("map_click", "data"),
+              State("current_selection", "data"),
               prevent_initial_call=True)
-def update_current_selection(*clicks):
-    cd = dict(zip(["clip", "text", "cbs", "map"], clicks)).get(ctx.triggered_id)
+def update_current_selection(clip, text, cbs, map_click, current):
+    # the map selects on a plain click anywhere inside a buurt; shift+click adds/removes for comparing.
+    # map_click carries the clicked area(s) + whether shift was held, so we accumulate the selection in
+    # Python rather than relying on Plotly keeping its own selection across figure redraws.
+    if ctx.triggered_id == "map_click":
+        clicked = [int(p["customdata"]) for p in (map_click or {}).get("points", []) if p.get("customdata") is not None]
+        if not clicked:
+            raise exceptions.PreventUpdate
+        if not map_click.get("shift"):
+            return list(dict.fromkeys(clicked))
+        sel = list(current)
+        for idx in clicked:  # shift+click toggles each clicked area in/out of the current selection
+            sel = [c for c in sel if c != idx] if idx in sel else sel + [idx]
+        return sel
+
+    cd = {"clip": clip, "text": text, "cbs": cbs}.get(ctx.triggered_id)
     if cd is None:
         raise exceptions.PreventUpdate
     pts = cd["points"]
 
-    # for some reason box and lasso select trigger the callback twice 
+    # for some reason box and lasso select trigger the callback twice
     # the second time with an empty box / lasso -> so no update to prevent overwrite
     if "range" not in cd.keys() and "lassoPoints" not in cd.keys() and len(pts) == 0:
         raise exceptions.PreventUpdate
-    
+
     i = [int(pt["customdata"]) for pt in pts if "customdata" in pt]
-    return i
+    return list(dict.fromkeys(i))  # dedupe, just in case a point shows up twice
+
+# report map clicks (anywhere inside a buurt polygon) to the selection callback, together with whether
+# shift was held -> lets shift+click toggle areas for comparison. capture shift from the actual click event.
+# each redraw resets the map's own selection, so selectedData always holds just the one area clicked.
+app.clientside_callback(
+    """
+    function(selectedData) {
+        if (!window.__shiftCapInit) {
+            document.addEventListener("mousedown", e => { window.__lastShift = e.shiftKey; }, true);
+            window.__shiftCapInit = true;
+        }
+        if (!selectedData || !selectedData.points || !selectedData.points.length) return window.dash_clientside.no_update;
+        return {points: selectedData.points, shift: !!window.__lastShift};
+    }
+    """,
+    Output("map_click", "data"),
+    Input("map", "selectedData"),
+    prevent_initial_call=True)
 
 # clear button resets the selection back to nothing
 @app.callback(Output("current_selection", "data", allow_duplicate=True),
