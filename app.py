@@ -38,6 +38,8 @@ PAGE = {"display": "flex", "gap": "12px", "padding": "0 12px 12px", "boxSizing":
         "background": "#f5f6f8", "fontFamily": FONT}
 CARD = {"background": "#fff", "borderRadius": "10px", "padding": "8px",
         "boxShadow": "0 1px 3px rgba(0,0,0,.12)", "overflow": "hidden"}
+OVERLAY = {"position": "fixed", "inset": 0, "background": "rgba(0,0,0,.35)", "zIndex": 1000,
+           "display": "flex", "alignItems": "center", "justifyContent": "center"}  # intro popup backdrop
 
 
 def _fit(lat, lon):  # one-time center+zoom that frames every point
@@ -161,8 +163,29 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
     dcc.Store(id="current_filter", data=df.index.to_list()),
     dcc.Store(id="query_text_selection_start", data=0),
     dcc.Store(id="query_text_selection_end", data=0),
-    html.Div("Neighbourhood embedding explorer", style={"padding": "10px 16px",
-             "fontWeight": "700", "fontSize": "16px", "fontFamily": FONT}),
+    dcc.Store(id="intro_seen", storage_type="local"),   # remembers if the popup was shown before (per browser)
+    html.Div(id="intro", style={**OVERLAY, "display": "none"}, children=[
+        html.Div(style={**CARD, "maxWidth": "470px", "padding": "20px 24px", "fontFamily": FONT, "lineHeight": "1.5"}, children=[
+            html.Div(style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"}, children=[
+                html.Span("Welcome to the Neighbourhood embedding explorer", style={"fontWeight": "700", "fontSize": "16px"}),
+                html.Button("×", id="intro_close", style={"border": "none", "background": "none",
+                            "fontSize": "24px", "lineHeight": "1", "cursor": "pointer"})]),
+            html.P("This tool lets you explore the neighbourhoods of Amsterdam and see which ones are alike and why."),
+            html.P("Every dot is a neighbourhood. The map makes it easy to see where they are. The three plots on the right group "
+                   "them by how similar they are in different ways: by what they look like from above using CLIP, by how they get described in "
+                   "words by using neighbourhood descriptions, and by their CBS statistics."),
+            html.P("Click a neighbourhood, on the map or in any plot, to select it. The data of the selected neighbourhood shows up in the table "
+                   "and the spider chart, and the ones most like it in the different facets light up on the map and in the plots."),
+            html.P("If you want to compare a few neighbourhoods, hold shift and click on them in either the map or the plots. The table and spider chart then show them next to each other."),
+            html.P("You can also filter with a query and choose which indicators to show, both on the left."),
+            html.P("Click the i in the top right whenever you want to read this again.",
+                   style={"color": "#888", "fontSize": "13px"})])]),
+    html.Div(style={"padding": "10px 16px", "fontFamily": FONT, "display": "flex",
+                    "alignItems": "center", "justifyContent": "space-between"}, children=[
+        html.Span("Neighbourhood embedding explorer", style={"fontWeight": "700", "fontSize": "16px"}),
+        html.Button("i", id="info_button", style={"width": "26px", "height": "26px", "borderRadius": "50%",
+                    "border": "1px solid #ccc", "background": "#fff", "cursor": "pointer", "fontStyle": "italic",
+                    "fontWeight": "700"})]),
     html.Div(style={**PAGE, "height": "calc(100vh - 44px)"}, children=[
         html.Div(style={"width": "25%", **CARD, "display": "flex", "flexDirection": "column"}, children=[
             html.Div("​", id="query_message", style={"color": "black", "fontsize": "14px", "fontFamily": FONT}),
@@ -270,6 +293,25 @@ def update_figure_columns(cols, i):
               prevent_initial_call=True)
 def update_map_style(map_style, i, filter):
     return mapfig(i, filter, map_style)
+
+# show the intro popup on first visit + whenever the "i" button is clicked, hide it on the cross
+@app.callback(Output("intro", "style"),
+              Input("intro_seen", "data"),
+              Input("info_button", "n_clicks"),
+              Input("intro_close", "n_clicks"))
+def toggle_intro(seen, info, close):
+    if ctx.triggered_id == "intro_close":
+        return {**OVERLAY, "display": "none"}
+    if ctx.triggered_id == "info_button":
+        return {**OVERLAY, "display": "flex"}
+    return {**OVERLAY, "display": "none" if seen else "flex"}  # initial load: only show if never seen
+
+# remember that the popup has been shown so it stays closed on later visits
+@app.callback(Output("intro_seen", "data"),
+              Input("intro_close", "n_clicks"),
+              prevent_initial_call=True)
+def mark_intro_seen(_):
+    return True
 
 # track most recent selection positions in textarea to enable inserting in the middle
 # - does not keep track of changing selection with arrow keys until n_blur is triggered
