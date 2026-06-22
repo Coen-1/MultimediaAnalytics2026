@@ -1,11 +1,21 @@
 import json, math, os
 import numpy as np, pandas as pd, plotly.graph_objects as go, plotly.io as pio
 from dash import Dash, dcc, html, dash_table, Input, Output, State, no_update, ctx, exceptions
+import requests
+from shapely.geometry import shape, Point
 
 pio.templates.default = "plotly_white"
 
 df = pd.read_parquet("assets/data.parquet")
 SIM = {"clip": np.load("assets/sim_clip.npy"), "text": np.load("assets/sim_text.npy"), "cbs": np.load("assets/sim_cbs.npy")}
+with open("assets/buurten.geojson") as f:
+    AREAS = json.load(f)
+POLYGONS = []
+for feature in AREAS["features"]:
+    name = feature["properties"]["code"]
+    idx = df[df["code"] == name].index[0]
+    poly = shape(feature["geometry"])
+    POLYGONS.append((name, idx, poly))
 CBS = ["population", "income", "home_value", "density", "household_size",
        "pct_owner", "pct_single_pers", "pct_65plus", "pct_dutch", "cars_per_hh"]
 LBL = {"population": "Residents", "income": "Income", "home_value": "Home value", "density": "Density",
@@ -66,6 +76,35 @@ def fmt(v):
     if isinstance(v, str):
         return v
     return "—" if pd.isna(v) else round(float(v), 1)
+
+def geocode(q):
+    """Return (row_index, status_message) or (None, error_message)."""
+    if not q or not q.strip():
+        return [], ""
+    s = q.strip()
+    exact = df[df["name"].str.lower() == s.lower()]
+    if len(exact):
+        return int(exact.index[0]), f"matched buurt: {exact.iloc[0]['name']}"
+    try:
+        r = requests.get(
+            "https://nominatim.openstreetmap.org/search",
+            params={"q": f"{s}, Amsterdam, Netherlands",
+                    "format": "json", "limit": 1, "countrycodes": "nl",
+                    "viewbox": "4.74,52.42,5.07,52.28", "bounded": 1},
+            headers={"User-Agent": "ma-dashboard-prototype/0.1"},
+            timeout=5,
+        )
+        hits = r.json()
+        if hits:
+            lat, lon = float(hits[0]["lat"]), float(hits[0]["lon"])
+            pt = Point(lon, lat)
+            for name, idx, poly in POLYGONS:
+                if poly.contains(pt):
+                    return [idx], name
+            
+    except Exception:
+        pass
+    return [], "no match"
 
 def scatter(space, i, filter):
     c, s = colors(i, topk(i, SIM[space], filter))
@@ -225,6 +264,12 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                     style_table={"overflowX": "auto"})]),
             dcc.Graph(id="spider", style={"height": "340px", "flexShrink": 0})]),
         html.Div(style={"width": "45%", **CARD, "display": "flex", "flexDirection": "column", "position": "relative"}, children=[
+            html.Div("​", id="search_result"),
+            dcc.Input(id="search", type="text", debounce=True, n_submit=0,
+                    placeholder="Search address or buurt (Enter to submit)…",
+                    style={"padding": "6px 10px", "fontSize": "13px",
+                           "border": "1px solid #4b5563", "borderRadius": 4,
+                           "background": "#374151", "color": "white"}),
             dcc.Graph(id="map", style={"height": "100%"}),
             html.Div(dcc.RadioItems({"satellite": "Satellite map", "streetview": "Streetview map"}, 'satellite',
                                     id="map_style", inline=True,
@@ -235,9 +280,9 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                             "boxShadow": "0 1px 3px rgba(0,0,0,.2)", "fontFamily": FONT, "fontSize": "13px"})
         ]),
         html.Div(style={"width": "30%", **CARD, "display": "flex", "flexDirection": "column", "gap": "4px", "position":"relative"}, children=[
-            dcc.Graph(id="clip", style={"flex": 1}, config={"scrollZoom": True, "displayModeBar": False}),
-            dcc.Graph(id="text", style={"flex": 1}, config={"scrollZoom": True, "displayModeBar": False}),
-            dcc.Graph(id="cbs", style={"flex": 1}, config={"scrollZoom": True, "displayModeBar": False})]),
+            dcc.Graph(id="clip", style={"flex": 1}, config={"scrollZoom": True}),
+            dcc.Graph(id="text", style={"flex": 1}, config={"scrollZoom": True}),
+            dcc.Graph(id="cbs", style={"flex": 1}, config={"scrollZoom": True})]),
     ]),
 ])
 
@@ -282,6 +327,14 @@ def update_current_columns(value):
     if not value:
         raise exceptions.PreventUpdate
     return value
+
+# use search to select area
+@app.callback(Output("current_selection", "data", allow_duplicate=True),
+              Output("search_result", "children"),
+              Input("search", "value"),
+              prevent_initial_call=True)
+def search_location(adress):
+    return geocode(adress)
 
 # when selection or filter changes update all figures
 # run sequentially: update when all figures are ready
