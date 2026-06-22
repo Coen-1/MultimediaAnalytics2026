@@ -22,7 +22,7 @@ QOPTS = [{"label": f"{DESC[c]}  ·  {c}", "value": c} for c in CBS]  # query dro
 NORM = (df[CBS] - df[CBS].min()) / (df[CBS].max() - df[CBS].min() + 1e-9)
 K = 10
 TILE_TYPES = {"satellite": {"tiles": "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/{z}/{x}/{y}.jpeg",
-                            "attribution": "TBD"},
+                            "attribution": "Luchtfoto © Kadaster / Beeldmateriaal.nl"},
               "streetview": {"tiles": "https://tile.openstreetmap.org/{z}/{x}/{y}.png", 
                              "attribution": "© OpenStreetMap contributors"}}
 EXTRA_AREA_HIGHLIGHT = 20
@@ -40,6 +40,10 @@ CARD = {"background": "#fff", "borderRadius": "10px", "padding": "8px",
         "boxShadow": "0 1px 3px rgba(0,0,0,.12)", "overflow": "hidden"}
 OVERLAY = {"position": "fixed", "inset": 0, "background": "rgba(0,0,0,.35)", "zIndex": 1000,
            "display": "flex", "alignItems": "center", "justifyContent": "center"}  # intro popup backdrop
+BTN = {"background": ACCENT, "color": "#fff", "border": "none", "borderRadius": "8px", "padding": "0 14px",
+       "cursor": "pointer", "fontWeight": "600", "fontFamily": FONT}  # primary button
+LABEL = {"fontSize": "11px", "fontWeight": "700", "letterSpacing": ".04em", "textTransform": "uppercase",
+         "color": "#8a8f98", "fontFamily": FONT, "margin": "2px 0"}  # small section header
 
 
 def _fit(lat, lon):  # one-time center+zoom that frames every point
@@ -152,11 +156,12 @@ def spider(i, cols):
                            margin=dict(l=55, r=55, t=34, b=24), showlegend=False)
 
 def table(i, cols):
-    columns = [{"name": "Area", "id": "field"}] + [{"name": fmt(df["name"][idx]), "id": f"area_{idx}"} for idx in i]
+    columns = [{"name": "Indicator", "id": "field"}] + [{"name": fmt(df["name"][idx]), "id": f"area_{idx}"} for idx in i]
     rows = [{"field": DESC[k], **{f"area_{idx}": fmt(df[k][idx]) for idx in i}} for k in cols]
     return rows, columns
 
-app = Dash(__name__)
+app = Dash(__name__, external_stylesheets=[
+    "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"])
 app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, children=[
     dcc.Store(id="current_selection", data=[]),
     dcc.Store(id="current_columns", data=CBS),
@@ -187,39 +192,46 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                     "border": "1px solid #ccc", "background": "#fff", "cursor": "pointer", "fontStyle": "italic",
                     "fontWeight": "700"})]),
     html.Div(style={**PAGE, "height": "calc(100vh - 44px)"}, children=[
-        html.Div(style={"width": "25%", **CARD, "display": "flex", "flexDirection": "column"}, children=[
-            html.Div("​", id="query_message", style={"color": "black", "fontsize": "14px", "fontFamily": FONT}),
-            html.Div(style={"display": "flex", "flexdirection": "row"}, children=[
-                dcc.Textarea("", id="query_text", rows=1, style={"resize": "none"}, placeholder="Enter queries here: "),
-                dcc.Button("Filter", id="filter_button")
+        html.Div(style={"width": "25%", **CARD, "display": "flex", "flexDirection": "column", "gap": "8px"}, children=[
+            html.Div("Filter", style=LABEL),
+            html.Div("​", id="query_message", style={"color": "black", "fontSize": "14px", "fontFamily": FONT}),
+            html.Div(style={"display": "flex", "flexDirection": "row", "gap": "6px"}, children=[
+                dcc.Textarea("", id="query_text", rows=1, placeholder="Enter queries here: ",
+                             style={"resize": "none", "flex": "1", "fontFamily": FONT,
+                                    "border": "1px solid #d0d4da", "borderRadius": "8px", "padding": "6px 8px"}),
+                dcc.Button("Filter", id="filter_button", style=BTN)
             ]),
             dcc.Dropdown(id="query_columns", options=QOPTS, value=None,
                          placeholder="Use the dropdown to insert attributes in the query"),
-            html.Hr(style={"width": "100%", "borderTop": "1px solid black"}),
+            html.Hr(style={"width": "100%", "border": "none", "borderTop": "1px solid #e3e6ea", "margin": "4px 0"}),
+            html.Div("Indicators", style=LABEL),
             dcc.Dropdown(OPTS, CBS, id="column_select", closeOnSelect=False, multi=True, clearable=True,
                          placeholder="At least one column must be selected"),
             dash_table.DataTable(id="table",
-                columns=[{"name": "Field", "id": "field"}],
+                columns=[{"name": "Indicator", "id": "field"}],
                 style_as_list_view=True,
                 style_header={"background": "#f0f2f5", "fontWeight": "600", "border": "none",
                               "fontFamily": FONT, "padding": "6px 10px"},
-                style_cell={"padding": "6px 10px", "border": "none", "fontFamily": FONT,
-                            "fontSize": "13px", "textAlign": "left"},
-                style_data_conditional=[{"if": {"row_index": "odd"}, "background": "#fafbfc"},
-                                        {"if": {"column_id": "value"},
-                                         "fontVariantNumeric": "tabular-nums"}],
-                style_table={'overflowX': 'scroll'}),
+                style_cell={"padding": "6px 10px", "border": "none", "fontFamily": FONT, "fontSize": "13px",
+                            "textAlign": "left", "whiteSpace": "normal", "fontVariantNumeric": "tabular-nums"},
+                style_cell_conditional=[{"if": {"column_id": "field"}, "minWidth": "150px", "width": "45%"}],
+                style_data_conditional=[{"if": {"row_index": "odd"}, "background": "#fafbfc"}],
+                style_table={"overflowX": "auto"}),
             dcc.Graph(id="spider", style={"height": "340px", "flexShrink": 0})]),
-        html.Div(style={"width": "45%", **CARD, "display": "flex", "flexDirection": "column"}, children=[
+        html.Div(style={"width": "45%", **CARD, "display": "flex", "flexDirection": "column", "position": "relative"}, children=[
             dcc.Graph(id="map", style={"height": "100%"}),
-            html.Div(dcc.RadioItems({"satellite": "Satellite map", "streetview": "Streetview map"}, 'satellite', id="map_style"),
-                     style={"position":"absolute", "top":"91%", "left":"26.8%", "backgroundColor":"rgba(255, 255, 255, 0.6)",
-                            "padding": "4px 6px"})
+            html.Div(dcc.RadioItems({"satellite": "Satellite map", "streetview": "Streetview map"}, 'satellite',
+                                    id="map_style", inline=True,
+                                    labelStyle={"marginRight": "12px", "cursor": "pointer"},
+                                    inputStyle={"marginRight": "5px"}),
+                     style={"position": "absolute", "bottom": "12px", "left": "12px", "zIndex": 1,
+                            "background": "rgba(255,255,255,.9)", "padding": "6px 10px", "borderRadius": "8px",
+                            "boxShadow": "0 1px 3px rgba(0,0,0,.2)", "fontFamily": FONT, "fontSize": "13px"})
         ]),
-        html.Div(style={"width": "30%", **CARD, "display": "flex", "flexDirection": "column", "position":"relative"}, children=[
-            dcc.Graph(id="clip", style={"flex": 1}, config={"scrollZoom":True}),
-            dcc.Graph(id="text", style={"flex": 1}, config={"scrollZoom":True}),
-            dcc.Graph(id="cbs", style={"flex": 1}, config={"scrollZoom":True})]),
+        html.Div(style={"width": "30%", **CARD, "display": "flex", "flexDirection": "column", "gap": "4px", "position":"relative"}, children=[
+            dcc.Graph(id="clip", style={"flex": 1}, config={"scrollZoom": True, "displayModeBar": False}),
+            dcc.Graph(id="text", style={"flex": 1}, config={"scrollZoom": True, "displayModeBar": False}),
+            dcc.Graph(id="cbs", style={"flex": 1}, config={"scrollZoom": True, "displayModeBar": False})]),
     ]),
 ])
 
