@@ -8,9 +8,9 @@ df = pd.read_parquet("assets/data.parquet")
 SIM = {"clip": np.load("assets/sim_clip.npy"), "text": np.load("assets/sim_text.npy"), "cbs": np.load("assets/sim_cbs.npy")}
 CBS = ["population", "income", "home_value", "density", "household_size",
        "pct_owner", "pct_single_pers", "pct_65plus", "pct_dutch", "cars_per_hh"]
-LBL = {"population": "pop", "income": "income", "home_value": "home €", "density": "density",
-       "household_size": "hh size", "pct_owner": "% owner", "pct_single_pers": "% single",
-       "pct_65plus": "% 65+", "pct_dutch": "% dutch", "cars_per_hh": "cars/hh"}  # short spider axis labels
+LBL = {"population": "Residents", "income": "Income", "home_value": "Home value", "density": "Density",
+       "household_size": "Household size", "pct_owner": "% owners", "pct_single_pers": "% single-person",
+       "pct_65plus": "% 65+", "pct_dutch": "% Dutch", "cars_per_hh": "Cars/household"}  # spider axis labels
 DESC = {"population": "Number of residents", "income": "Avg. income per resident", "home_value": "Average home value",
         "density": "Residents per km²", "household_size": "Average household size", "pct_owner": "% owner-occupied homes",
         "pct_single_pers": "% single-person households", "pct_65plus": "% residents 65 and older",
@@ -207,16 +207,22 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
             html.Div("Indicators", style=LABEL),
             dcc.Dropdown(OPTS, CBS, id="column_select", closeOnSelect=False, multi=True, clearable=True,
                          placeholder="At least one column must be selected"),
-            dash_table.DataTable(id="table",
-                columns=[{"name": "Indicator", "id": "field"}],
-                style_as_list_view=True,
-                style_header={"background": "#f0f2f5", "fontWeight": "600", "border": "none",
-                              "fontFamily": FONT, "padding": "6px 10px"},
-                style_cell={"padding": "6px 10px", "border": "none", "fontFamily": FONT, "fontSize": "13px",
-                            "textAlign": "left", "whiteSpace": "normal", "fontVariantNumeric": "tabular-nums"},
-                style_cell_conditional=[{"if": {"column_id": "field"}, "minWidth": "150px", "width": "45%"}],
-                style_data_conditional=[{"if": {"row_index": "odd"}, "background": "#fafbfc"}],
-                style_table={"overflowX": "auto"}),
+            html.Div(style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"}, children=[
+                html.Div("Selected areas", style=LABEL),
+                dcc.Button("Clear", id="clear_button", style={"border": "1px solid #d0d4da", "background": "#fff",
+                           "color": "#555", "borderRadius": "8px", "padding": "0 10px", "cursor": "pointer",
+                           "fontSize": "12px", "fontFamily": FONT})]),
+            html.Div(style={"flex": "1", "minHeight": "0", "overflowY": "auto"}, children=[  # table scrolls, spider stays put
+                dash_table.DataTable(id="table",
+                    columns=[{"name": "Indicator", "id": "field"}],
+                    style_as_list_view=True,
+                    style_header={"background": "#f0f2f5", "fontWeight": "600", "border": "none",
+                                  "fontFamily": FONT, "padding": "6px 10px"},
+                    style_cell={"padding": "6px 10px", "border": "none", "fontFamily": FONT, "fontSize": "13px",
+                                "textAlign": "left", "whiteSpace": "normal", "fontVariantNumeric": "tabular-nums"},
+                    style_cell_conditional=[{"if": {"column_id": "field"}, "minWidth": "150px", "width": "45%"}],
+                    style_data_conditional=[{"if": {"row_index": "odd"}, "background": "#fafbfc"}],
+                    style_table={"overflowX": "auto"})]),
             dcc.Graph(id="spider", style={"height": "340px", "flexShrink": 0})]),
         html.Div(style={"width": "45%", **CARD, "display": "flex", "flexDirection": "column", "position": "relative"}, children=[
             dcc.Graph(id="map", style={"height": "100%"}),
@@ -260,6 +266,13 @@ def update_current_selection(*clicks):
     
     i = [int(pt["customdata"]) for pt in pts if "customdata" in pt]
     return i
+
+# clear button resets the selection back to nothing
+@app.callback(Output("current_selection", "data", allow_duplicate=True),
+              Input("clear_button", "n_clicks"),
+              prevent_initial_call=True)
+def clear_selection(_):
+    return []
 
 # keep track of selected columns
 @app.callback(Output("current_columns", "data"),
