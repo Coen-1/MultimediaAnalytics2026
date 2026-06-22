@@ -52,6 +52,8 @@ OVERLAY = {"position": "fixed", "inset": 0, "background": "rgba(0,0,0,.35)", "zI
            "display": "flex", "alignItems": "center", "justifyContent": "center"}  # intro popup backdrop
 BTN = {"background": ACCENT, "color": "#fff", "border": "none", "borderRadius": "8px", "padding": "0 14px",
        "cursor": "pointer", "fontWeight": "600", "fontFamily": FONT}  # primary button
+CLR_BTN = {"background": SEL, "color": "#fff", "border": "none", "borderRadius": "8px", "padding": "0 14px",
+       "cursor": "pointer", "fontWeight": "600", "fontFamily": FONT}  # primary button
 LABEL = {"fontSize": "11px", "fontWeight": "700", "letterSpacing": ".04em", "textTransform": "uppercase",
          "color": "#8a8f98", "fontFamily": FONT, "margin": "2px 0"}  # small section header
 
@@ -238,7 +240,8 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                 dcc.Textarea("", id="query_text", rows=1, placeholder="Enter queries here: ",
                              style={"resize": "none", "flex": "1", "fontFamily": FONT,
                                     "border": "1px solid #d0d4da", "borderRadius": "8px", "padding": "6px 8px"}),
-                dcc.Button("Filter", id="filter_button", style=BTN)
+                dcc.Button("Filter", id="filter_button", style=BTN),
+                dcc.Button("Clear", id="clear_filter_button", style=CLR_BTN)
             ]),
             dcc.Dropdown(id="query_columns", options=QOPTS, value=None,
                          placeholder="Use the dropdown to insert attributes in the query"),
@@ -446,6 +449,13 @@ def filter_dataframe(n_clicks, query_text, i):
         
     except:
         return no_update, no_update, "This is not a valid query", {"color": "red"}
+    
+@app.callback(Output("query_text", "value", allow_duplicate=True),
+              Output("current_filter", "data", allow_duplicate=True),
+              Input("clear_filter_button", "n_clicks"),
+              prevent_initial_call=True)
+def clear_filter(n_clicks):
+    return "", df.index.to_list()
 
 if __name__ == "__main__":
     app.run(debug=True)
