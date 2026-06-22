@@ -11,6 +11,14 @@ CBS = ["population", "income", "home_value", "density", "household_size",
 LBL = {"population": "pop", "income": "income", "home_value": "home €", "density": "density",
        "household_size": "hh size", "pct_owner": "% owner", "pct_single_pers": "% single",
        "pct_65plus": "% 65+", "pct_dutch": "% dutch", "cars_per_hh": "cars/hh"}  # short spider axis labels
+DESC = {"population": "Number of residents", "income": "Avg. income per resident", "home_value": "Average home value",
+        "density": "Residents per km²", "household_size": "Average household size", "pct_owner": "% owner-occupied homes",
+        "pct_single_pers": "% single-person households", "pct_65plus": "% residents 65 and older",
+        "pct_dutch": "% Dutch-origin residents", "cars_per_hh": "Cars per household"}  # 3-4 word column descriptions
+SPACE = {"clip": "Visual similarity (aerial imagery)", "text": "Description similarity (text)",
+         "cbs": "Statistical similarity (CBS data)"}  # readable embedding-plot titles
+OPTS = [{"label": DESC[c], "value": c} for c in CBS]               # readable column chips / dropdown
+QOPTS = [{"label": f"{DESC[c]}  ·  {c}", "value": c} for c in CBS]  # query dropdown also shows the queryable column name
 NORM = (df[CBS] - df[CBS].min()) / (df[CBS].max() - df[CBS].min() + 1e-9)
 K = 10
 TILE_TYPES = {"satellite": {"tiles": "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/{z}/{x}/{y}.jpeg",
@@ -59,7 +67,7 @@ def scatter(space, i, filter):
                                marker=dict(color=c[filter], size=s[filter], line=dict(width=0.5, color="rgba(0,0,0,.25)")),
                                customdata=filter, text=df["name"].iloc[filter], hoverinfo="text"))
     axis = dict(visible=False)  # UMAP coords are arbitrary -> hide axes
-    return f.update_layout(title=f"{space} embedding (UMAP)", title_font_size=13, clickmode="event+select",
+    return f.update_layout(title=SPACE[space], title_font_size=13, clickmode="event+select",
                            xaxis=axis, yaxis=axis, margin=dict(l=6, r=6, t=26, b=6), dragmode="pan")
 
 def mapfig(i, filter, map_style):
@@ -143,7 +151,7 @@ def spider(i, cols):
 
 def table(i, cols):
     columns = [{"name": "Area", "id": "field"}] + [{"name": fmt(df["name"][idx]), "id": f"area_{idx}"} for idx in i]
-    rows = [{"field": k, **{f"area_{idx}": fmt(df[k][idx]) for idx in i}} for k in cols]
+    rows = [{"field": DESC[k], **{f"area_{idx}": fmt(df[k][idx]) for idx in i}} for k in cols]
     return rows, columns
 
 app = Dash(__name__)
@@ -162,10 +170,10 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                 dcc.Textarea("", id="query_text", rows=1, style={"resize": "none"}, placeholder="Enter queries here: "),
                 dcc.Button("Filter", id="filter_button")
             ]),
-            dcc.Dropdown(id="query_columns", options=CBS, value=None, 
+            dcc.Dropdown(id="query_columns", options=QOPTS, value=None,
                          placeholder="Use the dropdown to insert attributes in the query"),
             html.Hr(style={"width": "100%", "borderTop": "1px solid black"}),
-            dcc.Dropdown(CBS, CBS, id="column_select", closeOnSelect=False, multi=True, clearable=True,
+            dcc.Dropdown(OPTS, CBS, id="column_select", closeOnSelect=False, multi=True, clearable=True,
                          placeholder="At least one column must be selected"),
             dash_table.DataTable(id="table",
                 columns=[{"name": "Field", "id": "field"}],
@@ -247,11 +255,12 @@ def update_figure_selections(i, filter, cols, map_style):
 # when selected columns change, update spiderplot and table
 @app.callback(Output("spider", "figure", allow_duplicate=True),
               Output("table", "data", allow_duplicate=True),
+              Output("table", "columns", allow_duplicate=True),
               Input("current_columns", "data"),
               State("current_selection", "data"),
               prevent_initial_call=True)
 def update_figure_columns(cols, i):
-    return spider(i, cols), table(i, cols)
+    return spider(i, cols), *table(i, cols)
 
 # when map style changes update map
 @app.callback(Output("map", "figure", allow_duplicate=True),
