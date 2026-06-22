@@ -30,6 +30,7 @@ SPACE = {"clip": "Visual similarity (aerial imagery)", "text": "Description simi
 OPTS = [{"label": DESC[c], "value": c} for c in CBS]               # readable column chips / dropdown
 QOPTS = [{"label": f"{DESC[c]}  ·  {c}", "value": c} for c in CBS]  # query dropdown also shows the queryable column name
 NORM = (df[CBS] - df[CBS].min()) / (df[CBS].max() - df[CBS].min() + 1e-9)
+NORM_MEDIAN = NORM.median()   # per-indicator median of the available values; used to fill CBS-suppressed gaps
 K = 10
 TILE_TYPES = {"satellite": {"tiles": "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/{z}/{x}/{y}.jpeg",
                             "attribution": "Luchtfoto © Kadaster / Beeldmateriaal.nl"},
@@ -576,27 +577,32 @@ def mapfig(i, filter, map_style, k=K, view=None, color_mode="overlap"):
 
 def spider(i, cols):
     theta = [LBL[c] for c in cols]
+    closed = theta + [theta[0]]
     f = go.Figure()
-    if len(i) == 0:
-        radius = [0]*(len(cols)+1)
-        fig_title = "No area selected"
-        f.add_trace(go.Scatterpolar(r=radius, theta=theta + [theta[0]], fill="toself", 
-                                    line_color="rgba(0,0,0,0)", fillcolor="rgba(0,0,0,0)"))
-    elif len(i) > len(SPIDER_C_OUT):
-        radius = [0]*(len(cols)+1)
-        fig_title = "Cannot show this many areas"
-        f.add_trace(go.Scatterpolar(r=radius, theta=theta + [theta[0]], fill="toself", 
+    if len(i) == 0 or len(i) > len(SPIDER_C_OUT):
+        fig_title = "No area selected" if len(i) == 0 else "Cannot show this many areas"
+        f.add_trace(go.Scatterpolar(r=[0]*(len(cols)+1), theta=closed, fill="toself",
                                     line_color="rgba(0,0,0,0)", fillcolor="rgba(0,0,0,0)"))
     else:
         fig_title = "Comparing each area"
+        any_missing = False
         for ci, item in enumerate(i):
-            color_out = SPIDER_C_OUT[ci]
-            color_in = SPIDER_C_IN[ci]
-            radius = NORM.iloc[item][cols].tolist() + [NORM.iloc[item][cols[0]]]
-            title = df.name[item]
-            f.add_trace(go.Scatterpolar(r=radius, theta=theta + [theta[0]], fill="toself",
-                                  line_color=color_out, fillcolor=color_in, name=title))
-    
+            raw = NORM.iloc[item][cols]
+            missing = raw.isna()                       # CBS suppresses values for small/private areas
+            vals = raw.fillna(NORM_MEDIAN[cols])        # impute to the median so the polygon stays complete
+            radius = vals.tolist() + [vals.iloc[0]]
+            f.add_trace(go.Scatterpolar(r=radius, theta=closed, fill="toself", mode="lines",
+                                        line_color=SPIDER_C_OUT[ci], fillcolor=SPIDER_C_IN[ci], name=df.name[item]))
+            if missing.any():  # flag imputed vertices with a hollow marker so missing data stays honest
+                any_missing = True
+                f.add_trace(go.Scatterpolar(
+                    r=[vals[c] for c in cols if missing[c]], theta=[LBL[c] for c in cols if missing[c]],
+                    mode="markers", marker=dict(symbol="circle-open", size=9, color=SPIDER_C_OUT[ci],
+                                                line=dict(width=2, color=SPIDER_C_OUT[ci])),
+                    hovertemplate="%{theta}: not reported (drawn at median)<extra></extra>", showlegend=False))
+        if any_missing:
+            fig_title = "Comparing each area  (○ = not reported)"
+
     return f.update_layout(title=fig_title, title_font_size=13, title_x=0.5,
                            polar=dict(radialaxis=dict(visible=True, range=[0, 1]),
                                       angularaxis=dict(tickfont=dict(size=10))),
@@ -615,8 +621,7 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
     dcc.Store(id="shift_capture_ready"),
     dcc.Store(id="current_columns", data=CBS),
     dcc.Store(id="current_filter", data=df.index.to_list()),
-    dcc.Store(id="map_view"),   # {zoom, visible:[idx]} read from the live map (drives pie size + semantic zoom)
-    dcc.Store(id="geo", data={"idx": df.index.to_list(), "lat": df.lat.to_list(), "lon": df.lon.to_list()}),
+    dcc.Store(id="map_view"),   # {zoom} read from the live map, so the modality dots keep a constant on-screen spacing
     dcc.Store(id="query_text_selection_start", data=0),
     dcc.Store(id="query_text_selection_end", data=0),
     dcc.Store(id="intro_seen", storage_type="local"),   # remembers if the popup was shown before (per browser)
@@ -865,8 +870,7 @@ def update_figure_columns(cols, i):
 def update_map_appearance(map_style, color_mode, i, filter, k, view):
     return mapfig(i, filter, map_style, k, view, color_mode)
 
-# redraw the map when the live view changes: keeps pies a constant on-screen size as you zoom, and
-# turns on semantic zoom once only a handful of buurten remain in view.
+# redraw the map when the zoom level changes so the offset modality dots keep a constant on-screen spacing.
 @app.callback(Output("map", "figure", allow_duplicate=True),
               Input("map_view", "data"),
               State("current_selection", "data"),
@@ -878,38 +882,23 @@ def update_map_appearance(map_style, color_mode, i, filter, k, view):
 def update_map_view(view, i, filter, k, map_style, color_mode):
     return mapfig(i, filter, map_style, k, view, color_mode)
 
-# read the live map (maplibre) bounds + zoom on every pan/zoom and report which buurten are visible.
-# bucket the zoom and collapse ">5 visible" so we only redraw on changes that actually matter.
+# read the live maplibre zoom on each pan/zoom; bucket it so we only redraw when the zoom really changes.
 app.clientside_callback(
     """
-    function(relayout, filter, geo) {
+    function(relayout) {
         var ds = window.dash_clientside;
         var gd = document.querySelector('#map .js-plotly-plot');
-        if (!gd || !geo) return ds.no_update;
-        var fl = gd._fullLayout || {};
-        var sp = fl.map && fl.map._subplot;
+        var sp = gd && gd._fullLayout && gd._fullLayout.map && gd._fullLayout.map._subplot;
         var m = sp && (sp.map || sp._map);
-        if (!m || !m.getBounds) return ds.no_update;
-        var b = m.getBounds(), z = m.getZoom();
-        var w = b.getWest(), e = b.getEast(), s = b.getSouth(), n = b.getNorth();
-        var fs = new Set(filter || []);
-        var vis = [];
-        for (var j = 0; j < geo.idx.length; j++) {
-            if (fs.size && !fs.has(geo.idx[j])) continue;
-            if (geo.lat[j] >= s && geo.lat[j] <= n && geo.lon[j] >= w && geo.lon[j] <= e) vis.push(geo.idx[j]);
-        }
-        var zb = Math.round(z * 4) / 4;
-        var visOut = vis.length <= 5 ? vis : [];
-        var key = zb + '|' + (vis.length <= 5 ? vis.join(',') : '>5');
-        if (window.__lastViewKey === key) return ds.no_update;
-        window.__lastViewKey = key;
-        return {zoom: zb, visible: visOut};
+        if (!m || !m.getZoom) return ds.no_update;
+        var zb = Math.round(m.getZoom() * 4) / 4;
+        if (window.__lastZoomBucket === zb) return ds.no_update;
+        window.__lastZoomBucket = zb;
+        return {zoom: zb};
     }
     """,
     Output("map_view", "data"),
     Input("map", "relayoutData"),
-    State("current_filter", "data"),
-    State("geo", "data"),
     prevent_initial_call=True)
 
 # show the intro popup on first visit + whenever the "i" button is clicked, hide it on the cross

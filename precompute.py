@@ -48,8 +48,9 @@ def cosine(emb):
 def pca2(emb):
     return PCA(n_components=2).fit_transform(emb)
 
-def umap2(emb):  # cosine metric matches the cosine() similarity used for retrieval
-    return umap.UMAP(metric="cosine", random_state=42).fit_transform(emb)
+def umap2(emb):  # cosine metric matches the cosine() similarity used for retrieval;
+    # n_neighbors/min_dist tuned for tighter, better-separated neighbourhood groups in the 2D layout
+    return umap.UMAP(metric="cosine", n_neighbors=30, min_dist=0.05, random_state=42).fit_transform(emb)
 
 
 def build(emb_clip, emb_text, df):
