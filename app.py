@@ -158,7 +158,7 @@ def geocode(q):
         pass
     return [], "no match"
 
-def scatter(space, i, filter, k=K):
+def scatter(space, i, filter, k=K, hover=True):
     i = list(i or [])
     filter = list(filter or [])
     hot = topk_by(avg_sim(i, space), filter, i, k) if len(i) else []
@@ -217,11 +217,12 @@ def scatter(space, i, filter, k=K):
         yaxis=axis,
         margin=dict(l=6, r=6, t=26, b=6),
         dragmode="pan",
+        hovermode=("closest" if hover else False),
         paper_bgcolor="white",
         plot_bgcolor="white"
     )
 
-def mapfig(i, filter, map_style, k=K, view=None, color_mode="overlap"):
+def mapfig(i, filter, map_style, k=K, view=None, color_mode="overlap", hover=True):
     """Build an overlap-count map or a continuous single-modality similarity surface."""
     i = list(i or [])
     filter = list(filter or [])
@@ -563,6 +564,7 @@ def mapfig(i, filter, map_style, k=K, view=None, color_mode="overlap"):
         uirevision="keep",
         margin=dict(l=0, r=0, t=0, b=0),
         clickmode="event",
+        hovermode=("closest" if hover else False),
         legend=dict(
             x=0.01,
             y=0.99,
@@ -575,7 +577,7 @@ def mapfig(i, filter, map_style, k=K, view=None, color_mode="overlap"):
         )
     )
 
-def spider(i, cols):
+def spider(i, cols, hover=True):
     theta = [LBL[c] for c in cols]
     closed = theta + [theta[0]]
     f = go.Figure()
@@ -604,9 +606,11 @@ def spider(i, cols):
             fig_title = "Comparing each area  (○ = not reported)"
 
     return f.update_layout(title=fig_title, title_font_size=13, title_x=0.5,
-                           polar=dict(radialaxis=dict(visible=True, range=[0, 1]),
+                           # keep the gridline rings but hide the 0.2/0.4/… numbers (radius = normalised magnitude)
+                           polar=dict(radialaxis=dict(visible=True, range=[0, 1], showticklabels=False, ticks=""),
                                       angularaxis=dict(tickfont=dict(size=10))),
-                           margin=dict(l=55, r=55, t=34, b=24), showlegend=False)
+                           margin=dict(l=55, r=55, t=34, b=24), showlegend=False,
+                           hovermode=("closest" if hover else False))
 
 def table(i, cols):
     columns = [{"name": "Indicator", "id": "field"}] + [{"name": fmt(df["name"][idx]), "id": f"area_{idx}"} for idx in i]
@@ -642,6 +646,12 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                    "or three top-k facets. The solid blue, green, and purple centre dots identify CLIP, text, and CBS."),
             html.P("If you want to compare a few neighbourhoods, hold shift and click on them in either the map or the plots. The table and spider chart then show them next to each other."),
             html.P("You can also filter with a query and choose which indicators to show, both on the left."),
+            html.P("The spider chart is a normalised view: every axis is scaled by that statistic's magnitude across all "
+                   "neighbourhoods, so the centre ring is the lowest value and the outer ring the highest. The gridline numbers "
+                   "are hidden on purpose — read the shape and relative size rather than exact figures (the table holds the raw "
+                   "values). A hollow ○ marks a value CBS did not report; it is drawn at the median so the shape stays complete."),
+            html.P("Use the 🎲 Random button to jump to a random neighbourhood (shift+click it to add one to your comparison), "
+                   "and switch off Hover info above the map if the tooltips get in the way."),
             html.P("Click the i in the top right whenever you want to read this again.",
                    style={"color": "#888", "fontSize": "13px"})])]),
     html.Div(style={"padding": "10px 16px", "fontFamily": FONT, "display": "flex",
@@ -672,9 +682,14 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                        tooltip={"placement": "bottom", "always_visible": True}),
             html.Div(style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"}, children=[
                 html.Div("Selected areas", style=LABEL),
-                dcc.Button("Clear", id="clear_button", style={"border": "1px solid #d0d4da", "background": "#fff",
-                           "color": "#555", "borderRadius": "8px", "padding": "0 10px", "cursor": "pointer",
-                           "fontSize": "12px", "fontFamily": FONT})]),
+                html.Div(style={"display": "flex", "gap": "6px"}, children=[
+                    dcc.Button("🎲 Random", id="random_button", title="Pick a random neighbourhood (shift+click to add one)",
+                               style={"border": "none", "background": ACCENT, "color": "#fff", "borderRadius": "8px",
+                                      "padding": "0 10px", "cursor": "pointer", "fontSize": "12px",
+                                      "fontWeight": "600", "fontFamily": FONT}),
+                    dcc.Button("Clear", id="clear_button", style={"border": "1px solid #d0d4da", "background": "#fff",
+                               "color": "#555", "borderRadius": "8px", "padding": "0 10px", "cursor": "pointer",
+                               "fontSize": "12px", "fontFamily": FONT})])]),
             html.Div(style={"flex": "1", "minHeight": "0", "overflowY": "auto"}, children=[  # table scrolls, spider stays put
                 dash_table.DataTable(id="table",
                     columns=[{"name": "Indicator", "id": "field"}],
@@ -709,7 +724,10 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                     inline=True,
                     labelStyle={"marginRight": "10px", "cursor": "pointer", "whiteSpace": "nowrap"},
                     inputStyle={"marginRight": "4px", "accentColor": ACCENT}
-                )
+                ),
+                dcc.Checklist(options=[{"label": "Hover info", "value": "on"}], value=["on"], id="hover_toggle",
+                              inline=True, style={"marginLeft": "auto", "whiteSpace": "nowrap"},
+                              labelStyle={"cursor": "pointer"}, inputStyle={"marginRight": "4px", "accentColor": ACCENT})
             ]),
             dcc.Graph(id="map", style={"height": "100%"},
                       config={"displayModeBar": False, "scrollZoom": True}),
@@ -811,6 +829,29 @@ app.clientside_callback(
 def clear_selection(_):
     return []
 
+# random button: pick a random buurt from the current filter. a plain click replaces the selection;
+# shift+click adds another random one to it (keeps the "just keep clicking" loop going).
+app.clientside_callback(
+    """
+    function(n, filter, current) {
+        var ds = window.dash_clientside;
+        if (!n || !filter || !filter.length) return ds.no_update;
+        if (window.__lastShift) {
+            var cur = (current || []).slice();
+            var pool = filter.filter(function(x){ return cur.indexOf(x) === -1; });
+            if (!pool.length) return ds.no_update;
+            cur.push(pool[Math.floor(Math.random() * pool.length)]);
+            return cur;
+        }
+        return [filter[Math.floor(Math.random() * filter.length)]];
+    }
+    """,
+    Output("current_selection", "data", allow_duplicate=True),
+    Input("random_button", "n_clicks"),
+    State("current_filter", "data"),
+    State("current_selection", "data"),
+    prevent_initial_call=True)
+
 # keep track of selected columns
 @app.callback(Output("current_columns", "data"),
               Input("column_select", "value"),
@@ -840,13 +881,15 @@ def search_location(adress):
               Input("current_selection", "data"),
               Input("current_filter", "data"),
               Input("k_slider", "value"),
+              Input("hover_toggle", "value"),
               State("current_columns", "data"),
               State("map_style", "value"),
               State("map_view", "data"),
               State("map_color_mode", "value"))
-def update_figure_selections(i, filter, k, cols, map_style, view, color_mode):
-    return scatter("clip", i, filter, k), scatter("text", i, filter, k), scatter("cbs", i, filter, k), \
-            mapfig(i, filter, map_style, k, view, color_mode), spider(i, cols), *table(i, cols)
+def update_figure_selections(i, filter, k, hover_toggle, cols, map_style, view, color_mode):
+    hover = "on" in (hover_toggle or [])
+    return scatter("clip", i, filter, k, hover), scatter("text", i, filter, k, hover), scatter("cbs", i, filter, k, hover), \
+            mapfig(i, filter, map_style, k, view, color_mode, hover), spider(i, cols, hover), *table(i, cols)
 
 # when selected columns change, update spiderplot and table
 @app.callback(Output("spider", "figure", allow_duplicate=True),
@@ -854,9 +897,10 @@ def update_figure_selections(i, filter, k, cols, map_style, view, color_mode):
               Output("table", "columns", allow_duplicate=True),
               Input("current_columns", "data"),
               State("current_selection", "data"),
+              State("hover_toggle", "value"),
               prevent_initial_call=True)
-def update_figure_columns(cols, i):
-    return spider(i, cols), *table(i, cols)
+def update_figure_columns(cols, i, hover_toggle):
+    return spider(i, cols, "on" in (hover_toggle or [])), *table(i, cols)
 
 # when map style or map colouring changes update map
 @app.callback(Output("map", "figure", allow_duplicate=True),
@@ -866,9 +910,10 @@ def update_figure_columns(cols, i):
               State("current_filter", "data"),
               State("k_slider", "value"),
               State("map_view", "data"),
+              State("hover_toggle", "value"),
               prevent_initial_call=True)
-def update_map_appearance(map_style, color_mode, i, filter, k, view):
-    return mapfig(i, filter, map_style, k, view, color_mode)
+def update_map_appearance(map_style, color_mode, i, filter, k, view, hover_toggle):
+    return mapfig(i, filter, map_style, k, view, color_mode, "on" in (hover_toggle or []))
 
 # redraw the map when the zoom level changes so the offset modality dots keep a constant on-screen spacing.
 @app.callback(Output("map", "figure", allow_duplicate=True),
@@ -878,9 +923,10 @@ def update_map_appearance(map_style, color_mode, i, filter, k, view):
               State("k_slider", "value"),
               State("map_style", "value"),
               State("map_color_mode", "value"),
+              State("hover_toggle", "value"),
               prevent_initial_call=True)
-def update_map_view(view, i, filter, k, map_style, color_mode):
-    return mapfig(i, filter, map_style, k, view, color_mode)
+def update_map_view(view, i, filter, k, map_style, color_mode, hover_toggle):
+    return mapfig(i, filter, map_style, k, view, color_mode, "on" in (hover_toggle or []))
 
 # read the live maplibre zoom on each pan/zoom; bucket it so we only redraw when the zoom really changes.
 app.clientside_callback(
