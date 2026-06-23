@@ -206,16 +206,13 @@ def mapfig(i, filter, map_style, k=K, view=None, color_mode=None, topk_only=True
 
     if i:
         scores = {space: avg_sim(i, space) for space, _ in MODS}
-        top = {space: topk_by(scores[space], filter, i, k) for space, _ in MODS}
     else:
         scores = {space: None for space, _ in MODS}
-        top = {space: [] for space, _ in MODS}
 
     percentiles = {
         space: _relative_percentiles(scores[space], filter) if i else {}
         for space, _ in MODS
     }
-    top_sets = {space: set(nodes) for space, nodes in top.items()}
 
     f = go.Figure()
 
@@ -242,19 +239,25 @@ def mapfig(i, filter, map_style, k=K, view=None, color_mode=None, topk_only=True
     # Colour by the average relative percentile across whichever embeddings are checked.
     selected_spaces = [space for space, _ in MODS if space in (color_mode or [])]
     if has_areas and i and selected_spaces:
-        # Top-K toggle on: keep only the per-modality top-K areas; off: colour every neighbourhood.
-        surface_idx = (
-            [idx for idx in filter if any(idx in top_sets[s] for s in selected_spaces)]
-            if topk_only else filter
-        )
-        # Relative percentile is easier to read across modalities whose raw cosine ranges differ.
+        # Combined score = average relative percentile across the checked facets (percentile is easier to
+        # read across modalities whose raw cosine ranges differ). Computed for every filtered neighbourhood.
         avg_pct = {
             idx: float(np.mean([percentiles[space][idx] for space in selected_spaces]))
-            for idx in surface_idx
+            for idx in filter
         }
+        # Top-K toggle on: keep exactly the K highest-scoring areas, ranked by the combined score;
+        # off: colour every neighbourhood.
+        if topk_only:
+            ranked = topk_by(avg_pct, filter, i, k)
+            rank = {idx: r + 1 for r, idx in enumerate(ranked)}
+            surface_idx = ranked
+        else:
+            surface_idx = filter
         label = " + ".join(SPACE_SHORT[space] for space in selected_spaces)
         hover_text = [
-            f"{df.at[idx, 'name']}<br>{label} similarity: {avg_pct[idx]:.0%}"
+            f"{df.at[idx, 'name']}<br>" +
+            (f"{label} similarity: {avg_pct[idx]:.0%}<br>rank: #{rank[idx]} of {k}" if topk_only
+             else f"{label} similarity: {avg_pct[idx]:.0%}")
             for idx in surface_idx
         ]
         f.add_choroplethmap(
