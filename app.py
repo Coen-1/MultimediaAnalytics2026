@@ -81,6 +81,11 @@ def _fit(lat, lon):  # one-time center+zoom that frames every point
     span = max(lat.max() - lat.min(), (lon.max() - lon.min()) * math.cos(math.radians(c["lat"])))
     return c, math.log2(360 / max(span, 1e-6)) - 1.2          # -1.2 = padding fudge
 CENTER, ZOOM = _fit(df.lat, df.lon)
+# clamp panning/zoom-out to just beyond the buurt polygons so the map stays on Amsterdam
+_pb = [p.bounds for _, _, p in POLYGONS]   # each: (lon_min, lat_min, lon_max, lat_max)
+_PAD = 0.08
+BOUNDS = dict(west=min(b[0] for b in _pb) - _PAD, south=min(b[1] for b in _pb) - _PAD,
+              east=max(b[2] for b in _pb) + _PAD, north=max(b[3] for b in _pb) + _PAD)
 
 def avg_sim(F, space):  # mean cosine similarity of every buurt to the focus set F (>=1 row), in `space`
     E = EMB[space]                       # rows are unit-normalized, so E @ mean(E[F]) == old SIM[F].mean(0)
@@ -355,7 +360,7 @@ def mapfig(i, filter, map_style, k=K, view=None, color_mode=None, topk_only=True
             })
 
     return f.update_layout(
-        map=dict(style=style, center=CENTER, zoom=ZOOM, domain=dict(x=[0, 1], y=[0, 1])),
+        map=dict(style=style, center=CENTER, zoom=ZOOM, bounds=BOUNDS, domain=dict(x=[0, 1], y=[0, 1])),
         uirevision="keep",
         margin=dict(l=0, r=0, t=0, b=0),
         clickmode="event",
@@ -431,22 +436,24 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                 html.Span("Welcome to the Neighbourhood embedding explorer", style={"fontWeight": "700", "fontSize": "16px"}),
                 html.Button("×", id="intro_close", style={"border": "none", "background": "none",
                             "fontSize": "24px", "lineHeight": "1", "cursor": "pointer"})]),
-            html.P("This tool lets you explore the neighbourhoods of Amsterdam and see which ones are alike and why."),
-            html.P("Every dot is a neighbourhood. The map makes it easy to see where they are. The three plots on the right group "
-                   "them by how similar they are in different ways: by what they look like from above using CLIP, by how they get described in "
-                   "words by using neighbourhood descriptions, and by their CBS statistics."),
-            html.P("Click a neighbourhood, on the map or in any plot, to select it. The data of the selected neighbourhood shows up in the table "
-                   "and the spider chart, and the ones most like it in the different facets light up on the map and in the plots."),
-            html.P("Use Map colour to switch between top-k overlap and a single-facet similarity surface. In overlap mode only top-k-relevant "
-                   "areas are filled: darker means stronger combined similarity. Yellow, orange, and purple outlines mark matches in one, two, "
-                   "or three top-k facets. The solid blue, green, and purple centre dots identify CLIP, text, and CBS."),
-            html.P("If you want to compare a few neighbourhoods, hold shift and click on them in either the map or the plots. The table and spider chart then show them next to each other."),
-            html.P("You can also filter with a query and choose which indicators to show, both on the left."),
-            html.P("The spider chart is a normalised view: every axis is scaled by that statistic's magnitude across all "
-                   "neighbourhoods, so the centre ring is the lowest value and the outer ring the highest. The gridline numbers "
-                   "are hidden on purpose — read the shape and relative size rather than exact figures (the table holds the raw "
-                   "values). A hollow ○ marks a value CBS did not report; it is drawn at the median so the shape stays complete."),
-            html.P("Switch off Hover info above the map if the tooltips get in the way."),
+            html.P("This tool helps you compare the neighbourhoods of Amsterdam. You pick one, and it shows which other "
+                   "neighbourhoods are alike, and why they are alike."),
+            html.P("The map in the middle shows every neighbourhood as its real area. The three plots on the right show the same "
+                   "neighbourhoods as dots, each plot grouping them by one kind of similarity: how they look from above (CLIP), how "
+                   "they are described in words (the neighbourhood descriptions), and their CBS statistics."),
+            html.P("Click a neighbourhood, on the map or in any plot, to select it. Its numbers appear in the table and the spider "
+                   "chart, and the ones most like it light up everywhere. You can also type an address or a neighbourhood name in the "
+                   "search box above the map to jump straight to it."),
+            html.P("When something is selected, the map shades the other neighbourhoods by how similar they are: darker means a closer "
+                   "match. The Map colour boxes above the map choose which kind of similarity is used (CLIP, text, CBS, or a mix), the "
+                   "Similar shown slider on the left sets how many neighbours are highlighted, and turning off Top-K only shades every "
+                   "neighbourhood instead of just the closest ones."),
+            html.P("To compare a few neighbourhoods, hold shift and click them; the table and spider chart then show them side by side, "
+                   "and Clear empties the selection. On the left you can also filter the neighbourhoods with a query and choose which "
+                   "indicators to show."),
+            html.P("The spider chart is relative: each axis runs from the lowest value in the city at the centre to the highest at the "
+                   "edge, so you read the shape rather than exact numbers (the table has those). A hollow circle marks a value CBS did "
+                   "not report, drawn in the middle so the shape stays whole."),
             html.P("Click the i in the top right whenever you want to read this again.",
                    style={"color": "#888", "fontSize": "13px"})])]),
     html.Div(style={"padding": "10px 16px", "fontFamily": FONT, "display": "flex",
@@ -634,7 +641,8 @@ def update_current_columns(value):
               Input("search", "value"),
               prevent_initial_call=True)
 def search_location(adress):
-    return geocode(adress)
+    sel, msg = geocode(adress)
+    return (sel if sel else no_update), msg   # keep the current selection on an empty/failed search
 
 # when selection or filter changes update all figures
 # run sequentially: update when all figures are ready
@@ -777,10 +785,12 @@ def filter_dataframe(n_clicks, query_text, i):
     
 @app.callback(Output("query_text", "value", allow_duplicate=True),
               Output("current_filter", "data", allow_duplicate=True),
+              Output("query_message", "children", allow_duplicate=True),
+              Output("query_message", "style", allow_duplicate=True),
               Input("clear_filter_button", "n_clicks"),
               prevent_initial_call=True)
 def clear_filter(n_clicks):
-    return "", df.index.to_list()
+    return "", df.index.to_list(), "", {"color": "black"}
 
 if __name__ == "__main__":
     app.run(debug=True)
