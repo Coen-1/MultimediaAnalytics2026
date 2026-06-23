@@ -7,7 +7,7 @@ from shapely.geometry import shape, Point
 pio.templates.default = "plotly_white"
 
 df = pd.read_parquet("assets/data.parquet")
-SIM = {"clip": np.load("assets/sim_clip.npy"), "text": np.load("assets/sim_text.npy"), "cbs": np.load("assets/sim_cbs.npy")}
+EMB = {"clip": np.load("assets/emb_clip.npy"), "text": np.load("assets/emb_text.npy"), "cbs": np.load("assets/emb_cbs.npy")}  # unit-normalized; avg_sim computes cosine on the fly
 with open("assets/buurten.geojson") as f:
     AREAS = json.load(f)
 POLYGONS = []
@@ -16,19 +16,20 @@ for feature in AREAS["features"]:
     idx = df[df["code"] == name].index[0]
     poly = shape(feature["geometry"])
     POLYGONS.append((name, idx, poly))
-CBS = ["population", "income", "home_value", "density", "household_size",
-       "pct_owner", "pct_single_pers", "pct_65plus", "pct_dutch", "cars_per_hh"]
-LBL = {"population": "Residents", "income": "Income", "home_value": "Home value", "density": "Density",
-       "household_size": "Household size", "pct_owner": "% owners", "pct_single_pers": "% single-person",
-       "pct_65plus": "% 65+", "pct_dutch": "% Dutch", "cars_per_hh": "Cars/household"}  # spider axis labels
-DESC = {"population": "Number of residents", "income": "Avg. income per resident", "home_value": "Average home value",
-        "density": "Residents per km²", "household_size": "Average household size", "pct_owner": "% owner-occupied homes",
-        "pct_single_pers": "% single-person households", "pct_65plus": "% residents 65 and older",
-        "pct_dutch": "% Dutch-origin residents", "cars_per_hh": "Cars per household"}  # 3-4 word column descriptions
+# CBS column catalogue lives in cbs_columns.json (Dutch field, our name, description,
+# spider label, unit). CBS = every measure present in the data; CBS_DEFAULT = the curated
+# starter set shown in the spider/table before the user picks more from the dropdown.
+_CBS_META = json.load(open(os.path.join(os.path.dirname(__file__), "cbs_columns.json")))
+_CBS_META = [e for e in _CBS_META if e["name"] in df.columns]  # tolerate data with fewer columns
+CBS = [e["name"] for e in _CBS_META]
+CBS_DEFAULT = [e["name"] for e in _CBS_META if e.get("default")] or CBS[:10]
+LBL = {e["name"]: e["spider"] for e in _CBS_META}        # short spider axis labels
+DESC = {e["name"]: e["description"] for e in _CBS_META}   # readable column descriptions
+UNIT = {e["name"]: e["unit"] for e in _CBS_META}          # unit per column
 SPACE = {"clip": "Visual similarity (aerial imagery)", "text": "Description similarity (text)",
          "cbs": "Statistical similarity (CBS data)"}  # readable embedding-plot titles
-OPTS = [{"label": DESC[c], "value": c} for c in CBS]               # readable column chips / dropdown
-QOPTS = [{"label": f"{DESC[c]}  ·  {c}", "value": c} for c in CBS]  # query dropdown also shows the queryable column name
+OPTS = [{"label": f"{DESC[c]} ({UNIT[c]})", "value": c} for c in CBS]   # readable column chips / dropdown
+QOPTS = [{"label": f"{DESC[c]}  ·  {c}", "value": c} for c in CBS]      # query dropdown also shows the queryable column name
 NORM = (df[CBS] - df[CBS].min()) / (df[CBS].max() - df[CBS].min() + 1e-9)
 NORM_MEDIAN = NORM.median()   # per-indicator median of the available values; used to fill CBS-suppressed gaps
 K = 10
@@ -53,7 +54,6 @@ SURFACE_SCALE = {
     "text": [[0, "#f4f6f8"], [0.35, "#e0eadf"], [0.7, "#9bc394"], [1, TEXT_C]],
     "cbs": [[0, "#f4f6f8"], [0.35, "#e8e0f1"], [0.7, "#c1a7df"], [1, CBS_C]],
 }
-UMAP_CORNERS = ("#a9bfd2", "#ddb29d", "#a9c6b2", "#c1afd2")
 SPIDER_C_OUT = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', 
                 '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52']
 SPIDER_C_IN = ['rgba(122,131,250,0.25)', 'rgba(241,110,88,0.25)', 'rgba(38,211,165,0.25)',
@@ -61,7 +61,6 @@ SPIDER_C_IN = ['rgba(122,131,250,0.25)', 'rgba(241,110,88,0.25)', 'rgba(38,211,1
                'rgba(255,124,162,0.25)', 'rgba(192,235,147,0.25)', 'rgba(255,166,255,0.25)', 'rgba(254,210,107,0.25)']
 MODS = (("clip", CLIP_C), ("text", TEXT_C), ("cbs", CBS_C))
 K_MAX = 25            # upper bound of the "similar shown" slider
-DOT_OFFSET_PX = 5.5   # separation between modality dots at a shared neighbourhood centre
 FONT = "Inter, system-ui, sans-serif"
 PAGE = {"display": "flex", "gap": "12px", "padding": "0 12px 12px", "boxSizing": "border-box",
         "background": "#f5f6f8", "fontFamily": FONT}
@@ -84,45 +83,16 @@ def _fit(lat, lon):  # one-time center+zoom that frames every point
 CENTER, ZOOM = _fit(df.lat, df.lon)
 
 def avg_sim(F, space):  # mean cosine similarity of every buurt to the focus set F (>=1 row), in `space`
-    return SIM[space][list(F)].mean(axis=0)
+    E = EMB[space]                       # rows are unit-normalized, so E @ mean(E[F]) == old SIM[F].mean(0)
+    return E @ E[list(F)].mean(axis=0)
 
 def topk_by(scores, filter, exclude, k):  # k filtered buurten with the highest score, excluding the focus set
     ex = set(exclude)
     return sorted((j for j in filter if j not in ex), key=lambda j: scores[j], reverse=True)[:k]
 
-def _rgb(hex_color):
-    h = hex_color.lstrip("#")
-    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
-
-def _hex(rgb):
-    return "#" + "".join(f"{max(0, min(255, round(v))):02x}" for v in rgb)
-
-def _bivariate_colors(space, rows):
-    """A soft four-corner colour field tied to the two displayed UMAP coordinates."""
-    x = df[f"{space}_x"].to_numpy(float)
-    y = df[f"{space}_y"].to_numpy(float)
-    x0, x1 = np.quantile(x, [0.02, 0.98])
-    y0, y1 = np.quantile(y, [0.02, 0.98])
-    xn = np.clip((x - x0) / max(x1 - x0, 1e-9), 0, 1)
-    yn = np.clip((y - y0) / max(y1 - y0, 1e-9), 0, 1)
-    bl, br, tl, tr = (np.array(_rgb(c), dtype=float) for c in UMAP_CORNERS)
-    out = []
-    for idx in rows:
-        bottom = bl * (1 - xn[idx]) + br * xn[idx]
-        top = tl * (1 - xn[idx]) + tr * xn[idx]
-        out.append(_hex(bottom * (1 - yn[idx]) + top * yn[idx]))
-    return out
-
 def _relative_percentiles(scores, rows):
     values = pd.Series([scores[idx] for idx in rows], index=rows)
     return values.rank(method="average", pct=True).to_dict()
-
-def _facet_dot_offsets(count):
-    if count == 1:
-        return [(0.0, 0.0)]
-    if count == 2:
-        return [(-0.75, 0.0), (0.75, 0.0)]
-    return [(0.0, 0.85), (-0.72, -0.45), (0.72, -0.45)]
 
 def fmt(v):
     if isinstance(v, str):
@@ -168,7 +138,7 @@ def scatter(space, i, filter, k=K, hover=True):
         y=df[f"{space}_y"].iloc[filter],
         mode="markers",
         marker=dict(
-            color=_bivariate_colors(space, filter),
+            color="#b3bdc7",
             size=6.5,
             opacity=0.72,
             line=dict(width=0.6, color="rgba(255,255,255,.72)")
@@ -222,12 +192,11 @@ def scatter(space, i, filter, k=K, hover=True):
         plot_bgcolor="white"
     )
 
-def mapfig(i, filter, map_style, k=K, view=None, color_mode="overlap", hover=True):
-    """Build an overlap-count map or a continuous single-modality similarity surface."""
+def mapfig(i, filter, map_style, k=K, view=None, color_mode=None, topk_only=True):
+    """Build a similarity surface coloured by the average over the selected embeddings."""
     i = list(i or [])
     filter = list(filter or [])
     k = int(k or K)
-    zoom = float((view or {}).get("zoom", ZOOM))
     has_areas = os.path.exists("assets/buurten.geojson")
 
     if i:
@@ -237,31 +206,11 @@ def mapfig(i, filter, map_style, k=K, view=None, color_mode="overlap", hover=Tru
         scores = {space: None for space, _ in MODS}
         top = {space: [] for space, _ in MODS}
 
-    ranks = {
-        space: {idx: rank for rank, idx in enumerate(nodes, start=1)}
-        for space, nodes in top.items()
-    }
     percentiles = {
         space: _relative_percentiles(scores[space], filter) if i else {}
         for space, _ in MODS
     }
     top_sets = {space: set(nodes) for space, nodes in top.items()}
-    memberships = {
-        idx: tuple(space for space, _ in MODS if idx in top_sets[space])
-        for idx in set().union(*top_sets.values())
-    } if i else {}
-    combined_strength = {
-        idx: float(np.mean([percentiles[space][idx] for space, _ in MODS]))
-        for idx in memberships
-    }
-    if combined_strength:
-        strength_lo, strength_hi = min(combined_strength.values()), max(combined_strength.values())
-        display_strength = {
-            idx: (value - strength_lo) / max(strength_hi - strength_lo, 1e-9)
-            for idx, value in combined_strength.items()
-        }
-    else:
-        display_strength = {}
 
     f = go.Figure()
 
@@ -285,27 +234,37 @@ def mapfig(i, filter, map_style, k=K, view=None, color_mode="overlap", hover=Tru
             showlegend=False
         )
 
-    if has_areas and i and color_mode in dict(MODS):
+    # Colour by the average relative percentile across whichever embeddings are checked.
+    selected_spaces = [space for space, _ in MODS if space in (color_mode or [])]
+    if has_areas and i and selected_spaces:
+        # Top-K toggle on: keep only the per-modality top-K areas; off: colour every neighbourhood.
+        surface_idx = (
+            [idx for idx in filter if any(idx in top_sets[s] for s in selected_spaces)]
+            if topk_only else filter
+        )
         # Relative percentile is easier to read across modalities whose raw cosine ranges differ.
-        pct = percentiles[color_mode]
-        hover = [
-            f"{df.at[idx, 'name']}<br>{SPACE_SHORT[color_mode]} similarity: "
-            f"{scores[color_mode][idx]:.3f}<br>Relative percentile: {pct[idx]:.0%}"
-            for idx in filter
+        avg_pct = {
+            idx: float(np.mean([percentiles[space][idx] for space in selected_spaces]))
+            for idx in surface_idx
+        }
+        label = " + ".join(SPACE_SHORT[space] for space in selected_spaces)
+        hover_text = [
+            f"{df.at[idx, 'name']}<br>{label} similarity: {avg_pct[idx]:.0%}"
+            for idx in surface_idx
         ]
         f.add_choroplethmap(
             geojson="/assets/buurten.geojson",
             featureidkey="properties.code",
-            locations=df["code"].iloc[filter],
-            customdata=filter,
-            text=hover,
-            z=[pct[idx] for idx in filter],
+            locations=df["code"].iloc[surface_idx],
+            customdata=surface_idx,
+            text=hover_text,
+            z=[avg_pct[idx] for idx in surface_idx],
             zmin=0,
             zmax=1,
-            colorscale=SURFACE_SCALE[color_mode],
+            colorscale=SURFACE_SCALE[selected_spaces[0]] if len(selected_spaces) == 1 else COMBINED_SCALE,
             showscale=True,
             colorbar=dict(
-                title=dict(text=f"{SPACE_SHORT[color_mode]} similarity: low → high", side="top"),
+                title=dict(text=f"{label} similarity: low → high", side="top"),
                 orientation="h",
                 thickness=8,
                 len=0.31,
@@ -324,90 +283,6 @@ def mapfig(i, filter, map_style, k=K, view=None, color_mode="overlap", hover=Tru
             hovertemplate="%{text}<extra></extra>",
             showlegend=False
         )
-    elif has_areas and i:
-        relevant_nodes = sorted(memberships)
-        combined_hover = []
-        for idx in relevant_nodes:
-            spaces = memberships[idx]
-            reasons = " + ".join(SPACE_SHORT[space] for space in spaces)
-            detail = "<br>".join(
-                f"{SPACE_SHORT[space]}: rank {ranks[space][idx]} · {scores[space][idx]:.3f}"
-                for space in spaces
-            )
-            combined_hover.append(
-                f"{df.at[idx, 'name']}<br>Combined relative similarity: "
-                f"{combined_strength[idx]:.0%}<br>{len(spaces)} matching facet"
-                f"{'s' if len(spaces) > 1 else ''}: {reasons}<br>{detail}"
-            )
-        f.add_choroplethmap(
-            geojson="/assets/buurten.geojson",
-            featureidkey="properties.code",
-            locations=df["code"].iloc[relevant_nodes],
-            customdata=relevant_nodes,
-            text=combined_hover,
-            z=[display_strength[idx] for idx in relevant_nodes],
-            zmin=0,
-            zmax=1,
-            colorscale=COMBINED_SCALE,
-            showscale=True,
-            colorbar=dict(
-                title=dict(text="Combined similarity<br>(darker = stronger)", side="top"),
-                orientation="h",
-                thickness=8,
-                len=0.34,
-                x=0.80,
-                xanchor="center",
-                y=0.975,
-                yanchor="top",
-                tickvals=[0, 1],
-                ticktext=["Lower top-k", "Higher top-k"],
-                tickfont=dict(size=9),
-                bgcolor="rgba(255,255,255,.88)",
-                outlinewidth=0
-            ),
-            marker=dict(opacity=0.78, line=dict(width=0.4, color="rgba(255,255,255,.7)")),
-            selected=dict(marker=dict(opacity=0.78)),
-            unselected=dict(marker=dict(opacity=0.78)),
-            hovertemplate="%{text}<extra></extra>",
-            showlegend=False
-        )
-
-        # Transparent overlays encode the number of top-k facets using unmistakable border colours.
-        for count in (1, 2, 3):
-            nodes = sorted(idx for idx, spaces in memberships.items() if len(spaces) == count)
-            if not nodes:
-                continue
-            f.add_choroplethmap(
-                geojson="/assets/buurten.geojson",
-                featureidkey="properties.code",
-                locations=df["code"].iloc[nodes],
-                customdata=nodes,
-                text=[combined_hover[relevant_nodes.index(idx)] for idx in nodes],
-                z=[1.0] * len(nodes),
-                zmin=0,
-                zmax=1,
-                colorscale=[[0, "rgba(0,0,0,0)"], [1, "rgba(0,0,0,0)"]],
-                showscale=False,
-                marker=dict(
-                    opacity=1,
-                    line=dict(width=1.2 + count * 0.75, color=FACET_BORDER[count])
-                ),
-                selected=dict(marker=dict(opacity=1)),
-                unselected=dict(marker=dict(opacity=1)),
-                hovertemplate="%{text}<extra></extra>",
-                showlegend=False
-            )
-
-        for count in (1, 2, 3):
-            f.add_scattermap(
-                lat=[None],
-                lon=[None],
-                mode="markers",
-                marker=dict(color=FACET_BORDER[count], size=6 + count * 2, opacity=1),
-                name=f"Outline · {count} top-k facet{'s' if count > 1 else ''}",
-                legendrank=10 + count,
-                showlegend=True
-            )
 
     # The selected neighbourhood stays unambiguous in every colouring mode.
     if has_areas and i:
@@ -427,86 +302,6 @@ def mapfig(i, filter, map_style, k=K, view=None, color_mode="overlap", hover=Tru
             unselected=dict(marker=dict(opacity=0.46)),
             hovertemplate="%{text}<br>Selected<extra></extra>",
             showlegend=False
-        )
-
-    # Separate small dots around a shared centre make every matching modality legible.
-    dot_data = {
-        space: {"lat": [], "lon": [], "text": [], "customdata": []}
-        for space, _ in MODS
-    }
-    lon_per_px = 1.40625 / (2 ** zoom)
-    for idx, spaces in memberships.items():
-        offsets = _facet_dot_offsets(len(spaces))
-        lat_per_px = lon_per_px * math.cos(math.radians(float(df.at[idx, "lat"])))
-        for space, (dx, dy) in zip(spaces, offsets):
-            dot_data[space]["lat"].append(float(df.at[idx, "lat"]) + dy * DOT_OFFSET_PX * lat_per_px)
-            dot_data[space]["lon"].append(float(df.at[idx, "lon"]) + dx * DOT_OFFSET_PX * lon_per_px)
-            dot_data[space]["customdata"].append(idx)
-            dot_data[space]["text"].append(
-                f"{df.at[idx, 'name']}<br>{SPACE_SHORT[space]} match · "
-                f"rank {ranks[space][idx]}<br>Similarity: {scores[space][idx]:.3f}"
-            )
-
-    halo_lat = sum((dot_data[space]["lat"] for space, _ in MODS), [])
-    halo_lon = sum((dot_data[space]["lon"] for space, _ in MODS), [])
-    if halo_lat:
-        f.add_scattermap(
-            lat=halo_lat,
-            lon=halo_lon,
-            mode="markers",
-            hoverinfo="skip",
-            showlegend=False,
-            selectedpoints=[],
-            unselected=dict(marker=dict(opacity=1)),
-            marker=dict(color="white", size=13, opacity=1)
-        )
-
-    for rank, (space, color) in enumerate(MODS, start=30):
-        dots = dot_data[space]
-        if not dots["lat"]:
-            continue
-        f.add_scattermap(
-            lat=dots["lat"],
-            lon=dots["lon"],
-            mode="markers",
-            customdata=dots["customdata"],
-            text=dots["text"],
-            hovertemplate="%{text}<extra></extra>",
-            selectedpoints=[],
-            unselected=dict(marker=dict(opacity=1)),
-            marker=dict(color=color, size=9, opacity=1),
-            name=f"Dot · {SPACE_SHORT[space]}",
-            legendrank=rank,
-            showlegend=True
-        )
-
-    if i:
-        d = df.iloc[i]
-        f.add_scattermap(
-            lat=d.lat,
-            lon=d.lon,
-            mode="markers",
-            customdata=i,
-            text=d.name,
-            hovertemplate="%{text}<br>Selected<extra></extra>",
-            selectedpoints=[],
-            unselected=dict(marker=dict(opacity=1)),
-            marker=dict(color="white", size=19, opacity=1),
-            showlegend=False
-        )
-        f.add_scattermap(
-            lat=d.lat,
-            lon=d.lon,
-            mode="markers",
-            customdata=i,
-            text=d.name,
-            hovertemplate="%{text}<br>Selected<extra></extra>",
-            selectedpoints=[],
-            unselected=dict(marker=dict(opacity=1)),
-            marker=dict(color=SEL, size=14, opacity=1),
-            name="Selected",
-            legendrank=40,
-            showlegend=True
         )
 
     filter_ids = df["code"].iloc[filter].tolist()
@@ -543,9 +338,9 @@ def mapfig(i, filter, map_style, k=K, view=None, color_mode="overlap", hover=Tru
                 "type": "line",
                 "source": "b",
                 "paint": {
-                    "line-color": "#f8fafc",
-                    "line-width": 0.75,
-                    "line-opacity": 0.74
+                    "line-color": "#a855f7" if map_style == "streetview" else "#facc15",
+                    "line-width": 1.4,
+                    "line-opacity": 0.9
                 },
                 "filter": ["in", ["get", "code"], ["literal", filter_ids]]
             }
@@ -564,7 +359,7 @@ def mapfig(i, filter, map_style, k=K, view=None, color_mode="overlap", hover=Tru
         uirevision="keep",
         margin=dict(l=0, r=0, t=0, b=0),
         clickmode="event",
-        hovermode=("closest" if hover else False),
+        hovermode="closest",
         legend=dict(
             x=0.01,
             y=0.99,
@@ -614,7 +409,7 @@ def spider(i, cols, hover=True):
 
 def table(i, cols):
     columns = [{"name": "Indicator", "id": "field"}] + [{"name": fmt(df["name"][idx]), "id": f"area_{idx}"} for idx in i]
-    rows = [{"field": DESC[k], **{f"area_{idx}": fmt(df[k][idx]) for idx in i}} for k in cols]
+    rows = [{"field": f"{DESC[k]} ({UNIT[k]})", **{f"area_{idx}": fmt(df[k][idx]) for idx in i}} for k in cols]
     return rows, columns
 
 app = Dash(__name__, external_stylesheets=[
@@ -623,14 +418,15 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
     dcc.Store(id="current_selection", data=[]),
     dcc.Store(id="map_click"),   # {points, shift} from a map click, filled clientside so we know if shift was held
     dcc.Store(id="shift_capture_ready"),
-    dcc.Store(id="current_columns", data=CBS),
+    dcc.Store(id="current_columns", data=CBS_DEFAULT),
     dcc.Store(id="current_filter", data=df.index.to_list()),
     dcc.Store(id="map_view"),   # {zoom} read from the live map, so the modality dots keep a constant on-screen spacing
     dcc.Store(id="query_text_selection_start", data=0),
     dcc.Store(id="query_text_selection_end", data=0),
     dcc.Store(id="intro_seen", storage_type="local"),   # remembers if the popup was shown before (per browser)
     html.Div(id="intro", style={**OVERLAY, "display": "none"}, children=[
-        html.Div(style={**CARD, "maxWidth": "470px", "padding": "20px 24px", "fontFamily": FONT, "lineHeight": "1.5"}, children=[
+        html.Div(style={**CARD, "width": "min(92vw, 640px)", "maxHeight": "90vh", "overflowY": "auto",
+                        "padding": "20px 24px", "fontFamily": FONT, "lineHeight": "1.5"}, children=[
             html.Div(style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"}, children=[
                 html.Span("Welcome to the Neighbourhood embedding explorer", style={"fontWeight": "700", "fontSize": "16px"}),
                 html.Button("×", id="intro_close", style={"border": "none", "background": "none",
@@ -650,8 +446,7 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                    "neighbourhoods, so the centre ring is the lowest value and the outer ring the highest. The gridline numbers "
                    "are hidden on purpose — read the shape and relative size rather than exact figures (the table holds the raw "
                    "values). A hollow ○ marks a value CBS did not report; it is drawn at the median so the shape stays complete."),
-            html.P("Use the 🎲 Random button to jump to a random neighbourhood (shift+click it to add one to your comparison), "
-                   "and switch off Hover info above the map if the tooltips get in the way."),
+            html.P("Switch off Hover info above the map if the tooltips get in the way."),
             html.P("Click the i in the top right whenever you want to read this again.",
                    style={"color": "#888", "fontSize": "13px"})])]),
     html.Div(style={"padding": "10px 16px", "fontFamily": FONT, "display": "flex",
@@ -663,7 +458,7 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
     html.Div(style={**PAGE, "height": "calc(100vh - 44px)"}, children=[
         html.Div(style={"width": "25%", **CARD, "display": "flex", "flexDirection": "column", "gap": "8px"}, children=[
             html.Div("Filter", style=LABEL),
-            html.Div("​", id="query_message", style={"color": "black", "fontSize": "14px", "fontFamily": FONT}),
+            html.Div(" ", id="query_message", style={"color": "black", "fontSize": "14px", "fontFamily": FONT}),
             html.Div(style={"display": "flex", "flexDirection": "row", "gap": "6px"}, children=[
                 dcc.Textarea("", id="query_text", rows=1, placeholder="Enter queries here: ",
                              style={"resize": "none", "flex": "1", "fontFamily": FONT,
@@ -675,7 +470,7 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                          placeholder="Use the dropdown to insert attributes in the query"),
             html.Hr(style={"width": "100%", "border": "none", "borderTop": "1px solid #e3e6ea", "margin": "4px 0"}),
             html.Div("Indicators", style=LABEL),
-            dcc.Dropdown(OPTS, CBS, id="column_select", closeOnSelect=False, multi=True, clearable=True,
+            dcc.Dropdown(OPTS, CBS_DEFAULT, id="column_select", closeOnSelect=False, multi=True, clearable=True,
                          placeholder="At least one column must be selected"),
             html.Div("Similar shown per facet (K)", style=LABEL),
             dcc.Slider(1, K_MAX, 1, value=K, id="k_slider", marks={1: "1", K_MAX: str(K_MAX)},
@@ -683,10 +478,6 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
             html.Div(style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"}, children=[
                 html.Div("Selected areas", style=LABEL),
                 html.Div(style={"display": "flex", "gap": "6px"}, children=[
-                    dcc.Button("🎲 Random", id="random_button", title="Pick a random neighbourhood (shift+click to add one)",
-                               style={"border": "none", "background": ACCENT, "color": "#fff", "borderRadius": "8px",
-                                      "padding": "0 10px", "cursor": "pointer", "fontSize": "12px",
-                                      "fontWeight": "600", "fontFamily": FONT}),
                     dcc.Button("Clear", id="clear_button", style={"border": "1px solid #d0d4da", "background": "#fff",
                                "color": "#555", "borderRadius": "8px", "padding": "0 10px", "cursor": "pointer",
                                "fontSize": "12px", "fontFamily": FONT})])]),
@@ -712,20 +503,19 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
             html.Div(style={"display": "flex", "alignItems": "center", "gap": "10px", "padding": "6px 2px 4px",
                             "fontFamily": FONT, "fontSize": "12px", "color": "#68727d"}, children=[
                 html.Span("Map colour", style={"fontWeight": "700", "whiteSpace": "nowrap"}),
-                dcc.RadioItems(
+                dcc.Checklist(
                     options=[
-                        {"label": "Overlap", "value": "overlap"},
                         {"label": "CLIP", "value": "clip"},
                         {"label": "Text", "value": "text"},
                         {"label": "CBS", "value": "cbs"}
                     ],
-                    value="overlap",
+                    value=["clip", "text", "cbs"],
                     id="map_color_mode",
                     inline=True,
                     labelStyle={"marginRight": "10px", "cursor": "pointer", "whiteSpace": "nowrap"},
                     inputStyle={"marginRight": "4px", "accentColor": ACCENT}
                 ),
-                dcc.Checklist(options=[{"label": "Hover info", "value": "on"}], value=["on"], id="hover_toggle",
+                dcc.Checklist(options=[{"label": "Top-K only", "value": "on"}], value=["on"], id="topk_toggle",
                               inline=True, style={"marginLeft": "auto", "whiteSpace": "nowrap"},
                               labelStyle={"cursor": "pointer"}, inputStyle={"marginRight": "4px", "accentColor": ACCENT})
             ]),
@@ -829,29 +619,6 @@ app.clientside_callback(
 def clear_selection(_):
     return []
 
-# random button: pick a random buurt from the current filter. a plain click replaces the selection;
-# shift+click adds another random one to it (keeps the "just keep clicking" loop going).
-app.clientside_callback(
-    """
-    function(n, filter, current) {
-        var ds = window.dash_clientside;
-        if (!n || !filter || !filter.length) return ds.no_update;
-        if (window.__lastShift) {
-            var cur = (current || []).slice();
-            var pool = filter.filter(function(x){ return cur.indexOf(x) === -1; });
-            if (!pool.length) return ds.no_update;
-            cur.push(pool[Math.floor(Math.random() * pool.length)]);
-            return cur;
-        }
-        return [filter[Math.floor(Math.random() * filter.length)]];
-    }
-    """,
-    Output("current_selection", "data", allow_duplicate=True),
-    Input("random_button", "n_clicks"),
-    State("current_filter", "data"),
-    State("current_selection", "data"),
-    prevent_initial_call=True)
-
 # keep track of selected columns
 @app.callback(Output("current_columns", "data"),
               Input("column_select", "value"),
@@ -881,15 +648,15 @@ def search_location(adress):
               Input("current_selection", "data"),
               Input("current_filter", "data"),
               Input("k_slider", "value"),
-              Input("hover_toggle", "value"),
+              Input("topk_toggle", "value"),
               State("current_columns", "data"),
               State("map_style", "value"),
               State("map_view", "data"),
               State("map_color_mode", "value"))
-def update_figure_selections(i, filter, k, hover_toggle, cols, map_style, view, color_mode):
-    hover = "on" in (hover_toggle or [])
-    return scatter("clip", i, filter, k, hover), scatter("text", i, filter, k, hover), scatter("cbs", i, filter, k, hover), \
-            mapfig(i, filter, map_style, k, view, color_mode, hover), spider(i, cols, hover), *table(i, cols)
+def update_figure_selections(i, filter, k, topk_toggle, cols, map_style, view, color_mode):
+    topk = "on" in (topk_toggle or [])
+    return scatter("clip", i, filter, k), scatter("text", i, filter, k), scatter("cbs", i, filter, k), \
+            mapfig(i, filter, map_style, k, view, color_mode, topk), spider(i, cols), *table(i, cols)
 
 # when selected columns change, update spiderplot and table
 @app.callback(Output("spider", "figure", allow_duplicate=True),
@@ -897,10 +664,9 @@ def update_figure_selections(i, filter, k, hover_toggle, cols, map_style, view, 
               Output("table", "columns", allow_duplicate=True),
               Input("current_columns", "data"),
               State("current_selection", "data"),
-              State("hover_toggle", "value"),
               prevent_initial_call=True)
-def update_figure_columns(cols, i, hover_toggle):
-    return spider(i, cols, "on" in (hover_toggle or [])), *table(i, cols)
+def update_figure_columns(cols, i):
+    return spider(i, cols), *table(i, cols)
 
 # when map style or map colouring changes update map
 @app.callback(Output("map", "figure", allow_duplicate=True),
@@ -910,23 +676,10 @@ def update_figure_columns(cols, i, hover_toggle):
               State("current_filter", "data"),
               State("k_slider", "value"),
               State("map_view", "data"),
-              State("hover_toggle", "value"),
+              State("topk_toggle", "value"),
               prevent_initial_call=True)
-def update_map_appearance(map_style, color_mode, i, filter, k, view, hover_toggle):
-    return mapfig(i, filter, map_style, k, view, color_mode, "on" in (hover_toggle or []))
-
-# redraw the map when the zoom level changes so the offset modality dots keep a constant on-screen spacing.
-@app.callback(Output("map", "figure", allow_duplicate=True),
-              Input("map_view", "data"),
-              State("current_selection", "data"),
-              State("current_filter", "data"),
-              State("k_slider", "value"),
-              State("map_style", "value"),
-              State("map_color_mode", "value"),
-              State("hover_toggle", "value"),
-              prevent_initial_call=True)
-def update_map_view(view, i, filter, k, map_style, color_mode, hover_toggle):
-    return mapfig(i, filter, map_style, k, view, color_mode, "on" in (hover_toggle or []))
+def update_map_appearance(map_style, color_mode, i, filter, k, view, topk_toggle):
+    return mapfig(i, filter, map_style, k, view, color_mode, "on" in (topk_toggle or []))
 
 # read the live maplibre zoom on each pan/zoom; bucket it so we only redraw when the zoom really changes.
 app.clientside_callback(

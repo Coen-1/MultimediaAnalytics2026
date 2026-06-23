@@ -1,19 +1,5 @@
 # TODO
 
-store all data in data folder
-
-
-fix the gitignore
-
-integrate text descriptions dataset
-
-
-
-
-
-
-
-
 # How to use
 - .venv/bin/python precompute.py
 - .venv/bin/python app.py 

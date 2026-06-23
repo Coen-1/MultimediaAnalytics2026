@@ -1,0 +1,1601 @@
+[
+  {
+    "dutch": "omgevingsadressendichtheid",
+    "name": "address_density",
+    "description": "Surrounding address density",
+    "spider": "Addr. density",
+    "unit": "per km²"
+  },
+  {
+    "dutch": "stedelijkheidAdressenPerKm2",
+    "name": "urbanity",
+    "description": "Urbanity (addresses per km²)",
+    "spider": "Urbanity",
+    "unit": "per km²"
+  },
+  {
+    "dutch": "bevolkingsdichtheidInwonersPerKm2",
+    "name": "density",
+    "description": "Residents per km²",
+    "spider": "Density",
+    "unit": "per km²",
+    "default": true
+  },
+  {
+    "dutch": "aantalInwoners",
+    "name": "population",
+    "description": "Number of residents",
+    "spider": "Residents",
+    "unit": "residents",
+    "default": true
+  },
+  {
+    "dutch": "mannen",
+    "name": "men",
+    "description": "Number of men",
+    "spider": "Men",
+    "unit": "residents"
+  },
+  {
+    "dutch": "vrouwen",
+    "name": "women",
+    "description": "Number of women",
+    "spider": "Women",
+    "unit": "residents"
+  },
+  {
+    "dutch": "percentagePersonen0Tot15Jaar",
+    "name": "pct_persons_0_to_15_years",
+    "description": "% persons 0 to 15 years",
+    "spider": "% persons 0 to 15 years",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentagePersonen15Tot25Jaar",
+    "name": "pct_persons_15_to_25_years",
+    "description": "% persons 15 to 25 years",
+    "spider": "% persons 15 to 25 years",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentagePersonen25Tot45Jaar",
+    "name": "pct_persons_25_to_45_years",
+    "description": "% persons 25 to 45 years",
+    "spider": "% persons 25 to 45 years",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentagePersonen45Tot65Jaar",
+    "name": "pct_persons_45_to_65_years",
+    "description": "% persons 45 to 65 years",
+    "spider": "% persons 45 to 65 years",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentagePersonen65JaarEnOuder",
+    "name": "pct_65plus",
+    "description": "% residents 65 and older",
+    "spider": "% 65+",
+    "unit": "%",
+    "default": true
+  },
+  {
+    "dutch": "percentageOngehuwd",
+    "name": "pct_unmarried",
+    "description": "% unmarried",
+    "spider": "% unmarried",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageGehuwd",
+    "name": "pct_married",
+    "description": "% married",
+    "spider": "% married",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageGescheid",
+    "name": "pct_divorced",
+    "description": "% divorced",
+    "spider": "% divorced",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageVerweduwd",
+    "name": "pct_widowed",
+    "description": "% widowed",
+    "spider": "% widowed",
+    "unit": "%"
+  },
+  {
+    "dutch": "geboorteTotaal",
+    "name": "births_total",
+    "description": "Births total",
+    "spider": "Births total",
+    "unit": "count"
+  },
+  {
+    "dutch": "geboortesPer1000Inwoners",
+    "name": "births_per_1000_residents",
+    "description": "Births per 1000 residents",
+    "spider": "Births per 1000 residents",
+    "unit": "per 1,000 residents"
+  },
+  {
+    "dutch": "sterfteTotaal",
+    "name": "deaths_total",
+    "description": "Deaths total",
+    "spider": "Deaths total",
+    "unit": "count"
+  },
+  {
+    "dutch": "sterfteRelatief",
+    "name": "deaths_relative",
+    "description": "Deaths relative",
+    "spider": "Deaths relative",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalHuishoudens",
+    "name": "households",
+    "description": "Number of households",
+    "spider": "Households",
+    "unit": "households"
+  },
+  {
+    "dutch": "percentageEenpersoonshuishoudens",
+    "name": "pct_single_pers",
+    "description": "% single-person households",
+    "spider": "% single-person",
+    "unit": "%",
+    "default": true
+  },
+  {
+    "dutch": "percentageHuishoudensZonderKinderen",
+    "name": "pct_households_without_children",
+    "description": "% households without children",
+    "spider": "% households without chil…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageHuishoudensMetKinderen",
+    "name": "pct_households_with_children",
+    "description": "% households with children",
+    "spider": "% households with children",
+    "unit": "%"
+  },
+  {
+    "dutch": "gemiddeldeHuishoudsgrootte",
+    "name": "household_size",
+    "description": "Average household size",
+    "spider": "Household size",
+    "unit": "persons",
+    "default": true
+  },
+  {
+    "dutch": "percentageMetHerkomstlandNederland",
+    "name": "pct_dutch",
+    "description": "% Dutch-origin residents",
+    "spider": "% Dutch",
+    "unit": "%",
+    "default": true
+  },
+  {
+    "dutch": "percentageMetHerkomstlandUitEuropaExclNl",
+    "name": "pct_with_origin_uit_europe_excl_nl",
+    "description": "% with origin uit Europe excl. NL",
+    "spider": "% with origin uit Europe…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageMetHerkomstlandBuitenEuropa",
+    "name": "pct_with_origin_outside_europe",
+    "description": "% with origin outside Europe",
+    "spider": "% with origin outside Eur…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageGebInNlMetHerkomstlandNederland",
+    "name": "pct_born_in_nl_with_origin_netherlands",
+    "description": "% born in NL with origin Netherlands",
+    "spider": "% born in NL with origin…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percGebInNlMetHerkomstlandInEuropaExNl",
+    "name": "pct_born_in_nl_with_origin_in_europe_ex_nl",
+    "description": "% born in NL with origin in Europe ex NL",
+    "spider": "% born in NL with origin…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percGebInNlMetHerkomstlandBuitenEuropa",
+    "name": "pct_born_in_nl_with_origin_outside_europe",
+    "description": "% born in NL with origin outside Europe",
+    "spider": "% born in NL with origin…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percGebBuitenNlMetHerkomstlndInEuropaExNl",
+    "name": "pct_born_outside_nl_with_origin_in_europe_ex_nl",
+    "description": "% born outside NL with origin in Europe ex NL",
+    "spider": "% born outside NL with or…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percGebBuitenNlMetHerkomstlndBuitenEuropa",
+    "name": "pct_born_outside_nl_with_origin_outside_europe",
+    "description": "% born outside NL with origin outside Europe",
+    "spider": "% born outside NL with or…",
+    "unit": "%"
+  },
+  {
+    "dutch": "aantalBedrijvenLandbouwBosbouwVisserij",
+    "name": "number_of_businesses_agriculture_forestry_fishing",
+    "description": "Number of businesses agriculture forestry fishing",
+    "spider": "Number of businesses agri…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalBedrijvenNijverheidEnergie",
+    "name": "number_of_businesses_industry_energy",
+    "description": "Number of businesses industry energy",
+    "spider": "Number of businesses indu…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalBedrijvenHandelEnHoreca",
+    "name": "number_of_businesses_trade_and_hospitality",
+    "description": "Number of businesses trade and hospitality",
+    "spider": "Number of businesses trad…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalBedrijvenVervoerInformatieCommunicatie",
+    "name": "number_of_businesses_transport_information_communication",
+    "description": "Number of businesses transport information communication",
+    "spider": "Number of businesses tran…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalBedrijvenFinancieelOnroerendGoed",
+    "name": "number_of_businesses_finance_onroerend_goed",
+    "description": "Number of businesses finance onroerend goed",
+    "spider": "Number of businesses fina…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalBedrijvenZakelijkeDienstverlening",
+    "name": "number_of_businesses_business_services",
+    "description": "Number of businesses business services",
+    "spider": "Number of businesses busi…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalBedrijvenOverheidOnderwijsEnZorg",
+    "name": "number_of_businesses_government_education_and_healthcare",
+    "description": "Number of businesses government education and healthcare",
+    "spider": "Number of businesses gove…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalBedrijvenCultuurRecreatieOverige",
+    "name": "number_of_businesses_culture_recreatie_other",
+    "description": "Number of businesses culture recreatie other",
+    "spider": "Number of businesses cult…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalBedrijfsvestigingen",
+    "name": "number_of_business_establishments",
+    "description": "Number of business establishments",
+    "spider": "Number of business establ…",
+    "unit": "count"
+  },
+  {
+    "dutch": "woningvoorraad",
+    "name": "dwellings",
+    "description": "Housing stock (total dwellings)",
+    "spider": "Dwellings",
+    "unit": "dwellings"
+  },
+  {
+    "dutch": "gemiddeldeWoningwaarde",
+    "name": "home_value",
+    "description": "Average home value (WOZ)",
+    "spider": "Home value",
+    "unit": "€1,000",
+    "default": true
+  },
+  {
+    "dutch": "percentageEengezinswoning",
+    "name": "pct_single_family_home",
+    "description": "% single-family home",
+    "spider": "% single-family home",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageMeergezinswoning",
+    "name": "pct_multi_family_home",
+    "description": "% multi-family home",
+    "spider": "% multi-family home",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageBewoond",
+    "name": "pct_occupied",
+    "description": "% occupied",
+    "spider": "% occupied",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageKoopwoningen",
+    "name": "pct_owner",
+    "description": "% owner-occupied homes",
+    "spider": "% owners",
+    "unit": "%",
+    "default": true
+  },
+  {
+    "dutch": "percentageHuurwoningen",
+    "name": "pct_rental_dwellings",
+    "description": "% rental dwellings",
+    "spider": "% rental dwellings",
+    "unit": "%"
+  },
+  {
+    "dutch": "percHuurwoningenInBezitWoningcorporaties",
+    "name": "pct_rental_dwellings_in_owned_by_housing_corporations",
+    "description": "% rental dwellings in owned by housing corporations",
+    "spider": "% rental dwellings in own…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percHuurwoningenInBezitOverigeVerhuurders",
+    "name": "pct_rental_dwellings_in_owned_by_other_landlords",
+    "description": "% rental dwellings in owned by other landlords",
+    "spider": "% rental dwellings in own…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageWoningenMetEigendomOnbekend",
+    "name": "pct_dwellings_with_ownership_unknown",
+    "description": "% dwellings with ownership unknown",
+    "spider": "% dwellings with ownershi…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageBouwjaarklasseTot2000",
+    "name": "pct_built_to_2000",
+    "description": "% built to 2000",
+    "spider": "% built to 2000",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageBouwjaarklasseVanaf2000",
+    "name": "pct_built_from_2000",
+    "description": "% built from 2000",
+    "spider": "% built from 2000",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageLeegstandWoningen",
+    "name": "pct_vacant_dwellings",
+    "description": "% vacant dwellings",
+    "spider": "% vacant dwellings",
+    "unit": "%"
+  },
+  {
+    "dutch": "gemiddeldGasverbruikTotaal",
+    "name": "avg_gas_use_total",
+    "description": "Avg gas use total",
+    "spider": "Avg gas use total",
+    "unit": "m³"
+  },
+  {
+    "dutch": "gemiddeldGasverbruikAppartement",
+    "name": "avg_gas_use_apartment",
+    "description": "Avg gas use apartment",
+    "spider": "Avg gas use apartment",
+    "unit": "m³"
+  },
+  {
+    "dutch": "gemiddeldGasverbruikTussenwoning",
+    "name": "avg_gas_use_terraced_house",
+    "description": "Avg gas use terraced house",
+    "spider": "Avg gas use terraced house",
+    "unit": "m³"
+  },
+  {
+    "dutch": "gemiddeldGasverbruikHoekwoning",
+    "name": "avg_gas_use_corner_house",
+    "description": "Avg gas use corner house",
+    "spider": "Avg gas use corner house",
+    "unit": "m³"
+  },
+  {
+    "dutch": "gemiddeldGasverbruik2Onder1KapWoning",
+    "name": "avg_gas_use_2_onder_1_kap_dwelling",
+    "description": "Avg gas use 2 onder 1 kap dwelling",
+    "spider": "Avg gas use 2 onder 1 kap…",
+    "unit": "m³"
+  },
+  {
+    "dutch": "gemiddeldGasverbruikVrijstaandeWoning",
+    "name": "avg_gas_use_detached_dwelling",
+    "description": "Avg gas use detached dwelling",
+    "spider": "Avg gas use detached dwel…",
+    "unit": "m³"
+  },
+  {
+    "dutch": "gemiddeldGasverbruikHuurwoning",
+    "name": "avg_gas_use_rental_dwelling",
+    "description": "Avg gas use rental dwelling",
+    "spider": "Avg gas use rental dwelli…",
+    "unit": "m³"
+  },
+  {
+    "dutch": "gemiddeldGasverbruikkoopwoning",
+    "name": "avg_gasverbruikkoopwoning",
+    "description": "Avg gasverbruikkoopwoning",
+    "spider": "Avg gasverbruikkoopwoning",
+    "unit": "m³"
+  },
+  {
+    "dutch": "gemiddeldElektriciteitsverbruikTotaal",
+    "name": "avg_electricity_use_total",
+    "description": "Avg electricity use total",
+    "spider": "Avg electricity use total",
+    "unit": "kWh"
+  },
+  {
+    "dutch": "gemiddeldElektriciteitsverbruikAppartement",
+    "name": "avg_electricity_use_apartment",
+    "description": "Avg electricity use apartment",
+    "spider": "Avg electricity use apart…",
+    "unit": "kWh"
+  },
+  {
+    "dutch": "gemiddeldElektriciteitsverbruikTussenwoning",
+    "name": "avg_electricity_use_terraced_house",
+    "description": "Avg electricity use terraced house",
+    "spider": "Avg electricity use terra…",
+    "unit": "kWh"
+  },
+  {
+    "dutch": "gemiddeldElektriciteitsverbruikHoekwoning",
+    "name": "avg_electricity_use_corner_house",
+    "description": "Avg electricity use corner house",
+    "spider": "Avg electricity use corne…",
+    "unit": "kWh"
+  },
+  {
+    "dutch": "gemElektriciteitsverbruik2Onder1KapWoning",
+    "name": "avg_electricity_use_2_onder_1_kap_dwelling",
+    "description": "Avg electricity use 2 onder 1 kap dwelling",
+    "spider": "Avg electricity use 2 ond…",
+    "unit": "kWh"
+  },
+  {
+    "dutch": "gemElektriciteitsverbruikVrijstaandeWoning",
+    "name": "avg_electricity_use_detached_dwelling",
+    "description": "Avg electricity use detached dwelling",
+    "spider": "Avg electricity use detac…",
+    "unit": "kWh"
+  },
+  {
+    "dutch": "gemiddeldElektriciteitsverbruikHuurwoning",
+    "name": "avg_electricity_use_rental_dwelling",
+    "description": "Avg electricity use rental dwelling",
+    "spider": "Avg electricity use renta…",
+    "unit": "kWh"
+  },
+  {
+    "dutch": "gemiddeldElektriciteitsverbruikkoopwoning",
+    "name": "avg_elektriciteitsverbruikkoopwoning",
+    "description": "Avg elektriciteitsverbruikkoopwoning",
+    "spider": "Avg elektriciteitsverbrui…",
+    "unit": "kWh"
+  },
+  {
+    "dutch": "percentageWoningenMetStadsverwarming",
+    "name": "pct_dwellings_with_district_heating",
+    "description": "% dwellings with district heating",
+    "spider": "% dwellings with district…",
+    "unit": "%"
+  },
+  {
+    "dutch": "opleidingsniveauLaag",
+    "name": "education_level_low",
+    "description": "Education level low",
+    "spider": "Education level low",
+    "unit": "residents"
+  },
+  {
+    "dutch": "opleidingsniveauMiddelbaar",
+    "name": "education_level_medium",
+    "description": "Education level medium",
+    "spider": "Education level medium",
+    "unit": "residents"
+  },
+  {
+    "dutch": "opleidingsniveauHoog",
+    "name": "education_level_high",
+    "description": "Education level high",
+    "spider": "Education level high",
+    "unit": "residents"
+  },
+  {
+    "dutch": "nettoArbeidsparticipatie",
+    "name": "net_labour_participation",
+    "description": "Net labour participation",
+    "spider": "Net labour participation",
+    "unit": "count"
+  },
+  {
+    "dutch": "percentageWerknemers",
+    "name": "pct_employees",
+    "description": "% employees",
+    "spider": "% employees",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageZelfstandigen",
+    "name": "pct_self_employed",
+    "description": "% self-employed",
+    "spider": "% self-employed",
+    "unit": "%"
+  },
+  {
+    "dutch": "aantalInkomensontvangers",
+    "name": "number_of_earners",
+    "description": "Number of earners",
+    "spider": "Number of earners",
+    "unit": "€1,000"
+  },
+  {
+    "dutch": "gemiddeldInkomenPerInkomensontvanger",
+    "name": "avg_income_per_earner",
+    "description": "Avg income per earner",
+    "spider": "Avg income per earner",
+    "unit": "€1,000"
+  },
+  {
+    "dutch": "gemiddeldInkomenPerInwoner",
+    "name": "income",
+    "description": "Avg. income per resident",
+    "spider": "Income",
+    "unit": "€1,000/yr",
+    "default": true
+  },
+  {
+    "dutch": "percentagePersonenMetHoogInkomen",
+    "name": "pct_persons_with_high_income",
+    "description": "% persons with high income",
+    "spider": "% persons with high income",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentagePersonenMetLaagInkomen",
+    "name": "pct_persons_with_low_income",
+    "description": "% persons with low income",
+    "spider": "% persons with low income",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageHuishoudensMetHoogInkomen",
+    "name": "pct_households_with_high_income",
+    "description": "% households with high income",
+    "spider": "% households with high in…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageHuishoudensMetLaagInkomen",
+    "name": "pct_households_with_low_income",
+    "description": "% households with low income",
+    "spider": "% households with low inc…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageHuishoudensMetLaagsteInkomen",
+    "name": "pct_households_with_lowest_income",
+    "description": "% households with lowest income",
+    "spider": "% households with lowest…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageHuishoudensOnderOfRondSociaalMinimum",
+    "name": "pct_households_onder_of_rond_social_minimum",
+    "description": "% households onder of rond social minimum",
+    "spider": "% households onder of ron…",
+    "unit": "%"
+  },
+  {
+    "dutch": "aantalPersonenMetEenAoUitkeringTotaal",
+    "name": "number_of_persons_with_een_disability_benefit_benefit_total",
+    "description": "Number of persons with een disability benefit benefit total",
+    "spider": "Number of persons with ee…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalPersonenMetEenWwUitkeringTotaal",
+    "name": "number_of_persons_with_een_unemployment_benefit_benefit_total",
+    "description": "Number of persons with een unemployment benefit benefit total",
+    "spider": "Number of persons with ee…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalPersonenMetEenAlgBijstandsuitkeringTot",
+    "name": "number_of_persons_with_een_general_assistance_benefit_to",
+    "description": "Number of persons with een general assistance benefit to",
+    "spider": "Number of persons with ee…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalPersonenMetEenAowUitkeringTotaal",
+    "name": "number_of_persons_with_een_old_age_pension_benefit_total",
+    "description": "Number of persons with een old-age pension benefit total",
+    "spider": "Number of persons with ee…",
+    "unit": "count"
+  },
+  {
+    "dutch": "gemiddeldGestandaardiseerdInkomenVanHuishoudens",
+    "name": "avg_standardised_income_of_households",
+    "description": "Avg standardised income of households",
+    "spider": "Avg standardised income o…",
+    "unit": "€1,000"
+  },
+  {
+    "dutch": "huishoudensTot110PercentVanSociaalMinimum",
+    "name": "households_to_110_percent_of_of_social_minimum",
+    "description": "Households to 110 percent of of social minimum",
+    "spider": "Households to 110 percent…",
+    "unit": "%"
+  },
+  {
+    "dutch": "huishoudensTot120PercentVanSociaalMinimum",
+    "name": "households_to_120_percent_of_of_social_minimum",
+    "description": "Households to 120 percent of of social minimum",
+    "spider": "Households to 120 percent…",
+    "unit": "%"
+  },
+  {
+    "dutch": "mediaanVermogenVanParticuliereHuish",
+    "name": "median_wealth_of_private_households",
+    "description": "Median wealth of private households",
+    "spider": "Median wealth of private…",
+    "unit": "€1,000"
+  },
+  {
+    "dutch": "aantalJongerenMetJeugdzorgInNatura",
+    "name": "number_of_youth_with_youth_care_in_in_kind",
+    "description": "Number of youth with youth care in in kind",
+    "spider": "Number of youth with yout…",
+    "unit": "count"
+  },
+  {
+    "dutch": "percentageJongerenMetJeugdzorgInNatura",
+    "name": "pct_youth_with_youth_care_in_in_kind",
+    "description": "% youth with youth care in in kind",
+    "spider": "% youth with youth care i…",
+    "unit": "%"
+  },
+  {
+    "dutch": "aantalWmoClienten",
+    "name": "number_of_wmo_care_clients",
+    "description": "Number of WMO care clients",
+    "spider": "Number of WMO care clients",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalWmoClientenPer1000Inwoners",
+    "name": "number_of_wmo_care_clients_per_1000_residents",
+    "description": "Number of WMO care clients per 1000 residents",
+    "spider": "Number of WMO care client…",
+    "unit": "per 1,000 residents"
+  },
+  {
+    "dutch": "personenautosTotaal",
+    "name": "cars_total",
+    "description": "Cars total",
+    "spider": "Cars total",
+    "unit": "count"
+  },
+  {
+    "dutch": "personenautosPerHuishouden",
+    "name": "cars_per_hh",
+    "description": "Cars per household",
+    "spider": "Cars/household",
+    "unit": "per household",
+    "default": true
+  },
+  {
+    "dutch": "personenautosPerKm2",
+    "name": "cars_per_km_2",
+    "description": "Cars per km 2",
+    "spider": "Cars per km 2",
+    "unit": "per km²"
+  },
+  {
+    "dutch": "motortweewielersTotaal",
+    "name": "motorcycles_total",
+    "description": "Motorcycles total",
+    "spider": "Motorcycles total",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalPersonenautosMetBrandstofBenzine",
+    "name": "number_of_cars_with_fuel_petrol",
+    "description": "Number of cars with fuel petrol",
+    "spider": "Number of cars with fuel…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalPersonenautosMetOverigeBrandstof",
+    "name": "number_of_cars_with_other_fuel",
+    "description": "Number of cars with other fuel",
+    "spider": "Number of cars with other…",
+    "unit": "count"
+  },
+  {
+    "dutch": "oppervlakteTotaalInHa",
+    "name": "area_total_in_ha",
+    "description": "Area total in ha",
+    "spider": "Area total in ha",
+    "unit": "ha"
+  },
+  {
+    "dutch": "oppervlakteLandInHa",
+    "name": "area_land_in_ha",
+    "description": "Area land in ha",
+    "spider": "Area land in ha",
+    "unit": "ha"
+  },
+  {
+    "dutch": "oppervlakteWaterInHa",
+    "name": "area_water_in_ha",
+    "description": "Area water in ha",
+    "spider": "Area water in ha",
+    "unit": "ha"
+  },
+  {
+    "dutch": "huisartsenpraktijkGemiddeldeAfstandInKm",
+    "name": "gp_practice_avg_distance_in_km",
+    "description": "GP practice avg distance in km",
+    "spider": "GP practice avg distance…",
+    "unit": "km"
+  },
+  {
+    "dutch": "huisartsenpraktijkGemiddeldAantalBinnen1Km",
+    "name": "gp_practice_avg_number_of_within_1_km",
+    "description": "GP practice avg number of within 1 km",
+    "spider": "GP practice avg number of…",
+    "unit": "count"
+  },
+  {
+    "dutch": "huisartsenpraktijkGemiddeldAantalBinnen3Km",
+    "name": "gp_practice_avg_number_of_within_3_km",
+    "description": "GP practice avg number of within 3 km",
+    "spider": "GP practice avg number of…",
+    "unit": "count"
+  },
+  {
+    "dutch": "huisartsenpraktijkGemiddeldAantalBinnen5Km",
+    "name": "gp_practice_avg_number_of_within_5_km",
+    "description": "GP practice avg number of within 5 km",
+    "spider": "GP practice avg number of…",
+    "unit": "count"
+  },
+  {
+    "dutch": "huisartsenpostGemiddeldeAfstandInKm",
+    "name": "gp_emergency_post_avg_distance_in_km",
+    "description": "GP emergency post avg distance in km",
+    "spider": "GP emergency post avg dis…",
+    "unit": "km"
+  },
+  {
+    "dutch": "apotheekGemiddeldeAfstandInKm",
+    "name": "pharmacy_avg_distance_in_km",
+    "description": "Pharmacy avg distance in km",
+    "spider": "Pharmacy avg distance in…",
+    "unit": "km"
+  },
+  {
+    "dutch": "ziekenhuisInclBuitenpolikliniekGemAfstInKm",
+    "name": "hospital_incl_outpatient_avg_distance_in_km",
+    "description": "Hospital incl. outpatient avg distance in km",
+    "spider": "Hospital incl. outpatient…",
+    "unit": "km"
+  },
+  {
+    "dutch": "ziekenhuisInclBuitenpoliGemAantalBinnen5Km",
+    "name": "hospital_incl_outpatient_avg_number_of_within_5_km",
+    "description": "Hospital incl. outpatient avg number of within 5 km",
+    "spider": "Hospital incl. outpatient…",
+    "unit": "count"
+  },
+  {
+    "dutch": "ziekenhuisInclBuitenpoliGemAantalBinnen10Km",
+    "name": "hospital_incl_outpatient_avg_number_of_within_10_km",
+    "description": "Hospital incl. outpatient avg number of within 10 km",
+    "spider": "Hospital incl. outpatient…",
+    "unit": "count"
+  },
+  {
+    "dutch": "ziekenhuisInclBuitenpoliGemAantalBinnen20Km",
+    "name": "hospital_incl_outpatient_avg_number_of_within_20_km",
+    "description": "Hospital incl. outpatient avg number of within 20 km",
+    "spider": "Hospital incl. outpatient…",
+    "unit": "count"
+  },
+  {
+    "dutch": "ziekenhuisExclBuitenpolikliniekGemAfstInKm",
+    "name": "hospital_excl_outpatient_avg_distance_in_km",
+    "description": "Hospital excl. outpatient avg distance in km",
+    "spider": "Hospital excl. outpatient…",
+    "unit": "km"
+  },
+  {
+    "dutch": "ziekenhuisExclBuitenpoliGemAantalBinnen5Km",
+    "name": "hospital_excl_outpatient_avg_number_of_within_5_km",
+    "description": "Hospital excl. outpatient avg number of within 5 km",
+    "spider": "Hospital excl. outpatient…",
+    "unit": "count"
+  },
+  {
+    "dutch": "ziekenhuisExclBuitenpoliGemAantalBinnen10Km",
+    "name": "hospital_excl_outpatient_avg_number_of_within_10_km",
+    "description": "Hospital excl. outpatient avg number of within 10 km",
+    "spider": "Hospital excl. outpatient…",
+    "unit": "count"
+  },
+  {
+    "dutch": "ziekenhuisExclBuitenpoliGemAantalBinnen20Km",
+    "name": "hospital_excl_outpatient_avg_number_of_within_20_km",
+    "description": "Hospital excl. outpatient avg number of within 20 km",
+    "spider": "Hospital excl. outpatient…",
+    "unit": "count"
+  },
+  {
+    "dutch": "groteSupermarktGemiddeldeAfstandInKm",
+    "name": "large_supermarket_avg_distance_in_km",
+    "description": "Large supermarket avg distance in km",
+    "spider": "Large supermarket avg dis…",
+    "unit": "km"
+  },
+  {
+    "dutch": "groteSupermarktGemiddeldAantalBinnen1Km",
+    "name": "large_supermarket_avg_number_of_within_1_km",
+    "description": "Large supermarket avg number of within 1 km",
+    "spider": "Large supermarket avg num…",
+    "unit": "count"
+  },
+  {
+    "dutch": "groteSupermarktGemiddeldAantalBinnen3Km",
+    "name": "large_supermarket_avg_number_of_within_3_km",
+    "description": "Large supermarket avg number of within 3 km",
+    "spider": "Large supermarket avg num…",
+    "unit": "count"
+  },
+  {
+    "dutch": "groteSupermarktGemiddeldAantalBinnen5Km",
+    "name": "large_supermarket_avg_number_of_within_5_km",
+    "description": "Large supermarket avg number of within 5 km",
+    "spider": "Large supermarket avg num…",
+    "unit": "count"
+  },
+  {
+    "dutch": "winkelsOvDagelijkseLevensmGemAfstInKm",
+    "name": "shops_other_daily_goods_avg_distance_in_km",
+    "description": "Shops other daily goods avg distance in km",
+    "spider": "Shops other daily goods a…",
+    "unit": "km"
+  },
+  {
+    "dutch": "winkelsOvDagelLevensmGemAantalBinnen1Km",
+    "name": "shops_other_daily_goods_avg_number_of_within_1_km",
+    "description": "Shops other daily goods avg number of within 1 km",
+    "spider": "Shops other daily goods a…",
+    "unit": "count"
+  },
+  {
+    "dutch": "winkelsOvDagelLevensmGemAantalBinnen3Km",
+    "name": "shops_other_daily_goods_avg_number_of_within_3_km",
+    "description": "Shops other daily goods avg number of within 3 km",
+    "spider": "Shops other daily goods a…",
+    "unit": "count"
+  },
+  {
+    "dutch": "winkelsOvDagelLevensmGemAantalBinnen5Km",
+    "name": "shops_other_daily_goods_avg_number_of_within_5_km",
+    "description": "Shops other daily goods avg number of within 5 km",
+    "spider": "Shops other daily goods a…",
+    "unit": "count"
+  },
+  {
+    "dutch": "warenhuisGemiddeldeAfstandInKm",
+    "name": "department_store_avg_distance_in_km",
+    "description": "Department store avg distance in km",
+    "spider": "Department store avg dist…",
+    "unit": "km"
+  },
+  {
+    "dutch": "warenhuisGemiddeldAantalBinnen5Km",
+    "name": "department_store_avg_number_of_within_5_km",
+    "description": "Department store avg number of within 5 km",
+    "spider": "Department store avg numb…",
+    "unit": "count"
+  },
+  {
+    "dutch": "warenhuisGemiddeldAantalBinnen10Km",
+    "name": "department_store_avg_number_of_within_10_km",
+    "description": "Department store avg number of within 10 km",
+    "spider": "Department store avg numb…",
+    "unit": "count"
+  },
+  {
+    "dutch": "warenhuisGemiddeldAantalBinnen20Km",
+    "name": "department_store_avg_number_of_within_20_km",
+    "description": "Department store avg number of within 20 km",
+    "spider": "Department store avg numb…",
+    "unit": "count"
+  },
+  {
+    "dutch": "cafeGemiddeldeAfstandInKm",
+    "name": "cafe_avg_distance_in_km",
+    "description": "Café avg distance in km",
+    "spider": "Café avg distance in km",
+    "unit": "km"
+  },
+  {
+    "dutch": "cafeGemiddeldAantalBinnen1Km",
+    "name": "cafe_avg_number_of_within_1_km",
+    "description": "Café avg number of within 1 km",
+    "spider": "Café avg number of within…",
+    "unit": "count"
+  },
+  {
+    "dutch": "cafeGemiddeldAantalBinnen3Km",
+    "name": "cafe_avg_number_of_within_3_km",
+    "description": "Café avg number of within 3 km",
+    "spider": "Café avg number of within…",
+    "unit": "count"
+  },
+  {
+    "dutch": "cafeGemiddeldAantalBinnen5Km",
+    "name": "cafe_avg_number_of_within_5_km",
+    "description": "Café avg number of within 5 km",
+    "spider": "Café avg number of within…",
+    "unit": "count"
+  },
+  {
+    "dutch": "cafetariaGemiddeldeAfstandInKm",
+    "name": "cafeteria_avg_distance_in_km",
+    "description": "Cafeteria avg distance in km",
+    "spider": "Cafeteria avg distance in…",
+    "unit": "km"
+  },
+  {
+    "dutch": "cafetariaGemiddeldAantalBinnen1Km",
+    "name": "cafeteria_avg_number_of_within_1_km",
+    "description": "Cafeteria avg number of within 1 km",
+    "spider": "Cafeteria avg number of w…",
+    "unit": "count"
+  },
+  {
+    "dutch": "cafetariaGemiddeldAantalBinnen3Km",
+    "name": "cafeteria_avg_number_of_within_3_km",
+    "description": "Cafeteria avg number of within 3 km",
+    "spider": "Cafeteria avg number of w…",
+    "unit": "count"
+  },
+  {
+    "dutch": "cafetariaGemiddeldAantalBinnen5Km",
+    "name": "cafeteria_avg_number_of_within_5_km",
+    "description": "Cafeteria avg number of within 5 km",
+    "spider": "Cafeteria avg number of w…",
+    "unit": "count"
+  },
+  {
+    "dutch": "restaurantGemiddeldeAfstandInKm",
+    "name": "restaurant_avg_distance_in_km",
+    "description": "Restaurant avg distance in km",
+    "spider": "Restaurant avg distance i…",
+    "unit": "km"
+  },
+  {
+    "dutch": "restaurantGemiddeldAantalBinnen1Km",
+    "name": "restaurant_avg_number_of_within_1_km",
+    "description": "Restaurant avg number of within 1 km",
+    "spider": "Restaurant avg number of…",
+    "unit": "count"
+  },
+  {
+    "dutch": "restaurantGemiddeldAantalBinnen3Km",
+    "name": "restaurant_avg_number_of_within_3_km",
+    "description": "Restaurant avg number of within 3 km",
+    "spider": "Restaurant avg number of…",
+    "unit": "count"
+  },
+  {
+    "dutch": "restaurantGemiddeldAantalBinnen5Km",
+    "name": "restaurant_avg_number_of_within_5_km",
+    "description": "Restaurant avg number of within 5 km",
+    "spider": "Restaurant avg number of…",
+    "unit": "count"
+  },
+  {
+    "dutch": "hotelGemiddeldeAfstandInKm",
+    "name": "hotel_avg_distance_in_km",
+    "description": "Hotel avg distance in km",
+    "spider": "Hotel avg distance in km",
+    "unit": "km"
+  },
+  {
+    "dutch": "hotelGemiddeldAantalBinnen5Km",
+    "name": "hotel_avg_number_of_within_5_km",
+    "description": "Hotel avg number of within 5 km",
+    "spider": "Hotel avg number of withi…",
+    "unit": "count"
+  },
+  {
+    "dutch": "hotelGemiddeldAantalBinnen10Km",
+    "name": "hotel_avg_number_of_within_10_km",
+    "description": "Hotel avg number of within 10 km",
+    "spider": "Hotel avg number of withi…",
+    "unit": "count"
+  },
+  {
+    "dutch": "hotelGemiddeldAantalBinnen20Km",
+    "name": "hotel_avg_number_of_within_20_km",
+    "description": "Hotel avg number of within 20 km",
+    "spider": "Hotel avg number of withi…",
+    "unit": "count"
+  },
+  {
+    "dutch": "kinderdagverblijfGemiddeldeAfstandInKm",
+    "name": "daycare_avg_distance_in_km",
+    "description": "Daycare avg distance in km",
+    "spider": "Daycare avg distance in km",
+    "unit": "km"
+  },
+  {
+    "dutch": "kinderdagverblijfGemiddeldAantalBinnen1Km",
+    "name": "daycare_avg_number_of_within_1_km",
+    "description": "Daycare avg number of within 1 km",
+    "spider": "Daycare avg number of wit…",
+    "unit": "count"
+  },
+  {
+    "dutch": "kinderdagverblijfGemiddeldAantalBinnen3Km",
+    "name": "daycare_avg_number_of_within_3_km",
+    "description": "Daycare avg number of within 3 km",
+    "spider": "Daycare avg number of wit…",
+    "unit": "count"
+  },
+  {
+    "dutch": "kinderdagverblijfGemiddeldAantalBinnen5Km",
+    "name": "daycare_avg_number_of_within_5_km",
+    "description": "Daycare avg number of within 5 km",
+    "spider": "Daycare avg number of wit…",
+    "unit": "count"
+  },
+  {
+    "dutch": "buitenschoolseOpvangGemAfstandInKm",
+    "name": "after_school_care_avg_distance_in_km",
+    "description": "After-school care avg distance in km",
+    "spider": "After-school care avg dis…",
+    "unit": "km"
+  },
+  {
+    "dutch": "buitenschoolseOpvangGemiddeldAantalBinnen1Km",
+    "name": "after_school_care_avg_number_of_within_1_km",
+    "description": "After-school care avg number of within 1 km",
+    "spider": "After-school care avg num…",
+    "unit": "count"
+  },
+  {
+    "dutch": "buitenschoolseOpvangGemiddeldAantalBinnen3Km",
+    "name": "after_school_care_avg_number_of_within_3_km",
+    "description": "After-school care avg number of within 3 km",
+    "spider": "After-school care avg num…",
+    "unit": "count"
+  },
+  {
+    "dutch": "buitenschoolseOpvangGemiddeldAantalBinnen5Km",
+    "name": "after_school_care_avg_number_of_within_5_km",
+    "description": "After-school care avg number of within 5 km",
+    "spider": "After-school care avg num…",
+    "unit": "count"
+  },
+  {
+    "dutch": "basisonderwijsGemiddeldeAfstandInKm",
+    "name": "primary_school_avg_distance_in_km",
+    "description": "Primary school avg distance in km",
+    "spider": "Primary school avg distan…",
+    "unit": "km"
+  },
+  {
+    "dutch": "basisonderwijsGemiddeldAantalBinnen1Km",
+    "name": "primary_school_avg_number_of_within_1_km",
+    "description": "Primary school avg number of within 1 km",
+    "spider": "Primary school avg number…",
+    "unit": "count"
+  },
+  {
+    "dutch": "basisonderwijsGemiddeldAantalBinnen3Km",
+    "name": "primary_school_avg_number_of_within_3_km",
+    "description": "Primary school avg number of within 3 km",
+    "spider": "Primary school avg number…",
+    "unit": "count"
+  },
+  {
+    "dutch": "basisonderwijsGemiddeldAantalBinnen5Km",
+    "name": "primary_school_avg_number_of_within_5_km",
+    "description": "Primary school avg number of within 5 km",
+    "spider": "Primary school avg number…",
+    "unit": "count"
+  },
+  {
+    "dutch": "voortgezetOnderwijsGemAfstandInKm",
+    "name": "secondary_education_avg_distance_in_km",
+    "description": "Secondary education avg distance in km",
+    "spider": "Secondary education avg d…",
+    "unit": "km"
+  },
+  {
+    "dutch": "voortgezetOnderwijsGemiddeldAantalBinnen3Km",
+    "name": "secondary_education_avg_number_of_within_3_km",
+    "description": "Secondary education avg number of within 3 km",
+    "spider": "Secondary education avg n…",
+    "unit": "count"
+  },
+  {
+    "dutch": "voortgezetOnderwijsGemiddeldAantalBinnen5Km",
+    "name": "secondary_education_avg_number_of_within_5_km",
+    "description": "Secondary education avg number of within 5 km",
+    "spider": "Secondary education avg n…",
+    "unit": "count"
+  },
+  {
+    "dutch": "voortgezetOnderwijsGemiddeldAantalBinnen10Km",
+    "name": "secondary_education_avg_number_of_within_10_km",
+    "description": "Secondary education avg number of within 10 km",
+    "spider": "Secondary education avg n…",
+    "unit": "count"
+  },
+  {
+    "dutch": "vmboGemiddeldeAfstandInKm",
+    "name": "vmbo_school_avg_distance_in_km",
+    "description": "VMBO school avg distance in km",
+    "spider": "VMBO school avg distance…",
+    "unit": "km"
+  },
+  {
+    "dutch": "vmboGemiddeldAantalBinnen3Km",
+    "name": "vmbo_school_avg_number_of_within_3_km",
+    "description": "VMBO school avg number of within 3 km",
+    "spider": "VMBO school avg number of…",
+    "unit": "count"
+  },
+  {
+    "dutch": "vmboGemiddeldAantalBinnen5Km",
+    "name": "vmbo_school_avg_number_of_within_5_km",
+    "description": "VMBO school avg number of within 5 km",
+    "spider": "VMBO school avg number of…",
+    "unit": "count"
+  },
+  {
+    "dutch": "vmboGemiddeldAantalBinnen10Km",
+    "name": "vmbo_school_avg_number_of_within_10_km",
+    "description": "VMBO school avg number of within 10 km",
+    "spider": "VMBO school avg number of…",
+    "unit": "count"
+  },
+  {
+    "dutch": "havoVwoGemiddeldeAfstandInKm",
+    "name": "havo_vwo_avg_distance_in_km",
+    "description": "Havo vwo avg distance in km",
+    "spider": "Havo vwo avg distance in…",
+    "unit": "km"
+  },
+  {
+    "dutch": "havoVwoGemiddeldAantalBinnen3Km",
+    "name": "havo_vwo_avg_number_of_within_3_km",
+    "description": "Havo vwo avg number of within 3 km",
+    "spider": "Havo vwo avg number of wi…",
+    "unit": "count"
+  },
+  {
+    "dutch": "havoVwoGemiddeldAantalBinnen5Km",
+    "name": "havo_vwo_avg_number_of_within_5_km",
+    "description": "Havo vwo avg number of within 5 km",
+    "spider": "Havo vwo avg number of wi…",
+    "unit": "count"
+  },
+  {
+    "dutch": "havoVwoGemiddeldAantalBinnen10Km",
+    "name": "havo_vwo_avg_number_of_within_10_km",
+    "description": "Havo vwo avg number of within 10 km",
+    "spider": "Havo vwo avg number of wi…",
+    "unit": "count"
+  },
+  {
+    "dutch": "brandweerkazerneGemiddeldeAfstandInKm",
+    "name": "fire_station_avg_distance_in_km",
+    "description": "Fire station avg distance in km",
+    "spider": "Fire station avg distance…",
+    "unit": "km"
+  },
+  {
+    "dutch": "opritHoofdverkeerswegGemiddeldeAfstandInKm",
+    "name": "entrance_to_motorway_avg_distance_in_km",
+    "description": "Entrance to motorway avg distance in km",
+    "spider": "Entrance to motorway avg…",
+    "unit": "km"
+  },
+  {
+    "dutch": "treinstationGemiddeldeAfstandInKm",
+    "name": "train_station_avg_distance_in_km",
+    "description": "Train station avg distance in km",
+    "spider": "Train station avg distanc…",
+    "unit": "km"
+  },
+  {
+    "dutch": "overstapstationGemiddeldeAfstandInKm",
+    "name": "transit_hub_avg_distance_in_km",
+    "description": "Transit hub avg distance in km",
+    "spider": "Transit hub avg distance…",
+    "unit": "km"
+  },
+  {
+    "dutch": "zwembadGemiddeldeAfstandInKm",
+    "name": "swimming_pool_avg_distance_in_km",
+    "description": "Swimming pool avg distance in km",
+    "spider": "Swimming pool avg distanc…",
+    "unit": "km"
+  },
+  {
+    "dutch": "kunstijsbaanGemiddeldeAfstandInKm",
+    "name": "ice_rink_avg_distance_in_km",
+    "description": "Ice rink avg distance in km",
+    "spider": "Ice rink avg distance in…",
+    "unit": "km"
+  },
+  {
+    "dutch": "bibliotheekGemiddeldeAfstandInKm",
+    "name": "library_avg_distance_in_km",
+    "description": "Library avg distance in km",
+    "spider": "Library avg distance in km",
+    "unit": "km"
+  },
+  {
+    "dutch": "poppodiumGemiddeldeAfstandInKm",
+    "name": "pop_venue_avg_distance_in_km",
+    "description": "Pop venue avg distance in km",
+    "spider": "Pop venue avg distance in…",
+    "unit": "km"
+  },
+  {
+    "dutch": "bioscoopGemiddeldeAfstandInKm",
+    "name": "cinema_avg_distance_in_km",
+    "description": "Cinema avg distance in km",
+    "spider": "Cinema avg distance in km",
+    "unit": "km"
+  },
+  {
+    "dutch": "bioscoopGemiddeldAantalBinnen5Km",
+    "name": "cinema_avg_number_of_within_5_km",
+    "description": "Cinema avg number of within 5 km",
+    "spider": "Cinema avg number of with…",
+    "unit": "count"
+  },
+  {
+    "dutch": "bioscoopGemiddeldAantalBinnen10Km",
+    "name": "cinema_avg_number_of_within_10_km",
+    "description": "Cinema avg number of within 10 km",
+    "spider": "Cinema avg number of with…",
+    "unit": "count"
+  },
+  {
+    "dutch": "bioscoopGemiddeldAantalBinnen20Km",
+    "name": "cinema_avg_number_of_within_20_km",
+    "description": "Cinema avg number of within 20 km",
+    "spider": "Cinema avg number of with…",
+    "unit": "count"
+  },
+  {
+    "dutch": "saunaGemiddeldeAfstandInKm",
+    "name": "sauna_avg_distance_in_km",
+    "description": "Sauna avg distance in km",
+    "spider": "Sauna avg distance in km",
+    "unit": "km"
+  },
+  {
+    "dutch": "zonnebankGemiddeldeAfstandInKm",
+    "name": "tanning_salon_avg_distance_in_km",
+    "description": "Tanning salon avg distance in km",
+    "spider": "Tanning salon avg distanc…",
+    "unit": "km"
+  },
+  {
+    "dutch": "attractieparkGemiddeldeAfstandInKm",
+    "name": "amusement_park_avg_distance_in_km",
+    "description": "Amusement park avg distance in km",
+    "spider": "Amusement park avg distan…",
+    "unit": "km"
+  },
+  {
+    "dutch": "attractieparkGemiddeldAantalBinnen10Km",
+    "name": "amusement_park_avg_number_of_within_10_km",
+    "description": "Amusement park avg number of within 10 km",
+    "spider": "Amusement park avg number…",
+    "unit": "count"
+  },
+  {
+    "dutch": "attractieparkGemiddeldAantalBinnen20Km",
+    "name": "amusement_park_avg_number_of_within_20_km",
+    "description": "Amusement park avg number of within 20 km",
+    "spider": "Amusement park avg number…",
+    "unit": "count"
+  },
+  {
+    "dutch": "attractieparkGemiddeldAantalBinnen50Km",
+    "name": "amusement_park_avg_number_of_within_50_km",
+    "description": "Amusement park avg number of within 50 km",
+    "spider": "Amusement park avg number…",
+    "unit": "count"
+  },
+  {
+    "dutch": "theaterGemiddeldeAfstandInKm",
+    "name": "theatre_avg_distance_in_km",
+    "description": "Theatre avg distance in km",
+    "spider": "Theatre avg distance in km",
+    "unit": "km"
+  },
+  {
+    "dutch": "theaterGemiddeldAantalBinnen5Km",
+    "name": "theatre_avg_number_of_within_5_km",
+    "description": "Theatre avg number of within 5 km",
+    "spider": "Theatre avg number of wit…",
+    "unit": "count"
+  },
+  {
+    "dutch": "theaterGemiddeldAantalBinnen10Km",
+    "name": "theatre_avg_number_of_within_10_km",
+    "description": "Theatre avg number of within 10 km",
+    "spider": "Theatre avg number of wit…",
+    "unit": "count"
+  },
+  {
+    "dutch": "theaterGemiddeldAantalBinnen20Km",
+    "name": "theatre_avg_number_of_within_20_km",
+    "description": "Theatre avg number of within 20 km",
+    "spider": "Theatre avg number of wit…",
+    "unit": "count"
+  },
+  {
+    "dutch": "gemiddeldeAfstandTotMuseum",
+    "name": "avg_distance_to_museum",
+    "description": "Avg distance to museum",
+    "spider": "Avg distance to museum",
+    "unit": "count"
+  },
+  {
+    "dutch": "gemiddeldAantalMuseaBinnen5Km",
+    "name": "avg_number_of_museums_within_5_km",
+    "description": "Avg number of museums within 5 km",
+    "spider": "Avg number of museums wit…",
+    "unit": "count"
+  },
+  {
+    "dutch": "gemiddeldAantalMuseaBinnen10Km",
+    "name": "avg_number_of_museums_within_10_km",
+    "description": "Avg number of museums within 10 km",
+    "spider": "Avg number of museums wit…",
+    "unit": "count"
+  },
+  {
+    "dutch": "gemiddeldAantalMuseaBinnen20Km",
+    "name": "avg_number_of_museums_within_20_km",
+    "description": "Avg number of museums within 20 km",
+    "spider": "Avg number of museums wit…",
+    "unit": "count"
+  },
+  {
+    "dutch": "afstandTotOpenbaarGroenTotaal",
+    "name": "distance_to_public_green_space_total",
+    "description": "Distance to public green space total",
+    "spider": "Distance to public green…",
+    "unit": "km"
+  },
+  {
+    "dutch": "afstandTotParkOfPlantsoen",
+    "name": "distance_to_park_of_garden",
+    "description": "Distance to park of garden",
+    "spider": "Distance to park of garden",
+    "unit": "km"
+  },
+  {
+    "dutch": "afstandTotDagrcreatiefTerrein",
+    "name": "distance_to_day_recreation_area",
+    "description": "Distance to day-recreation area",
+    "spider": "Distance to day-recreatio…",
+    "unit": "km"
+  },
+  {
+    "dutch": "afstandTotBos",
+    "name": "distance_to_forest",
+    "description": "Distance to forest",
+    "spider": "Distance to forest",
+    "unit": "km"
+  },
+  {
+    "dutch": "afstandTotOpenNatuurTerreinTotaal",
+    "name": "distance_to_open_nature_area_total",
+    "description": "Distance to open nature area total",
+    "spider": "Distance to open nature a…",
+    "unit": "km"
+  },
+  {
+    "dutch": "afstandTotOpenDroogNatuurTerrein",
+    "name": "distance_to_open_dry_nature_area",
+    "description": "Distance to open dry nature area",
+    "spider": "Distance to open dry natu…",
+    "unit": "km"
+  },
+  {
+    "dutch": "afstandTotOpenNatNatuurlijkTerrein",
+    "name": "distance_to_open_wet_natural_area",
+    "description": "Distance to open wet natural area",
+    "spider": "Distance to open wet natu…",
+    "unit": "km"
+  },
+  {
+    "dutch": "afstandTotSemiopenbaarGroenTotaal",
+    "name": "distance_to_semi_public_green_space_total",
+    "description": "Distance to semi-public green space total",
+    "spider": "Distance to semi-public g…",
+    "unit": "km"
+  },
+  {
+    "dutch": "afstandTotSportterrein",
+    "name": "distance_to_sports_ground",
+    "description": "Distance to sports ground",
+    "spider": "Distance to sports ground",
+    "unit": "km"
+  },
+  {
+    "dutch": "afstandTotVolkstuin",
+    "name": "distance_to_allotment_garden",
+    "description": "Distance to allotment garden",
+    "spider": "Distance to allotment gar…",
+    "unit": "km"
+  },
+  {
+    "dutch": "afstandTotVerblijfsrecreatiefTerrein",
+    "name": "distance_to_stay_recreation_area",
+    "description": "Distance to stay-recreation area",
+    "spider": "Distance to stay-recreati…",
+    "unit": "km"
+  },
+  {
+    "dutch": "afstandTotRecreatiefBinnenwater",
+    "name": "distance_to_recreation_inland_water",
+    "description": "Distance to recreation inland water",
+    "spider": "Distance to recreation in…",
+    "unit": "km"
+  },
+  {
+    "dutch": "afstandTotBegraafplaats",
+    "name": "distance_to_cemetery",
+    "description": "Distance to cemetery",
+    "spider": "Distance to cemetery",
+    "unit": "km"
+  },
+  {
+    "dutch": "percentageOnbewoond",
+    "name": "pct_unoccupied",
+    "description": "% unoccupied",
+    "spider": "% unoccupied",
+    "unit": "%"
+  },
+  {
+    "dutch": "gemiddeldAardgasverbruik",
+    "name": "avg_natural_gas_use",
+    "description": "Avg natural-gas use",
+    "spider": "Avg natural-gas use",
+    "unit": "m³"
+  },
+  {
+    "dutch": "gemiddeldeElektriciteitslevering",
+    "name": "avg_electricity_delivery",
+    "description": "Avg electricity delivery",
+    "spider": "Avg electricity delivery",
+    "unit": "kWh"
+  },
+  {
+    "dutch": "aantalLeerlingenPrimairOnderwijs",
+    "name": "number_of_pupils_primary_education",
+    "description": "Number of pupils primary education",
+    "spider": "Number of pupils primary…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalLeerlingenVoortgezetOnderwijs",
+    "name": "number_of_pupils_secondary_education",
+    "description": "Number of pupils secondary education",
+    "spider": "Number of pupils secondar…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalStudentenMbo",
+    "name": "number_of_students_mbo",
+    "description": "Number of students MBO",
+    "spider": "Number of students MBO",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalStudentenHbo",
+    "name": "number_of_students_hbo",
+    "description": "Number of students HBO",
+    "spider": "Number of students HBO",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalStudentenWo",
+    "name": "number_of_students_wo",
+    "description": "Number of students WO",
+    "spider": "Number of students WO",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalPersonenMetBvmAlsHoogstBehOndNiv",
+    "name": "number_of_persons_with_primary_level_as_highest_beh_ond_niv",
+    "description": "Number of persons with primary-level as highest beh ond niv",
+    "spider": "Number of persons with pr…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalPersonenMetHvmAlsHoogstBehOndNiv",
+    "name": "number_of_persons_with_secondary_level_as_highest_beh_ond_niv",
+    "description": "Number of persons with secondary-level as highest beh ond niv",
+    "spider": "Number of persons with se…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalPersonenMetHwAlsHoogstBehOndNiv",
+    "name": "number_of_persons_with_tertiary_level_as_highest_beh_ond_niv",
+    "description": "Number of persons with tertiary-level as highest beh ond niv",
+    "spider": "Number of persons with te…",
+    "unit": "count"
+  },
+  {
+    "dutch": "aantalPersWerkzameBeroepsbevolking",
+    "name": "number_of_persons_employed_working_population",
+    "description": "Number of persons employed working population",
+    "spider": "Number of persons employe…",
+    "unit": "count"
+  },
+  {
+    "dutch": "percentageWerknemersMetVasteArbeidsrelatie",
+    "name": "pct_employees_with_permanent_employment",
+    "description": "% employees with permanent employment",
+    "spider": "% employees with permanen…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageWerknemersMetFlexibeleArbeidsrelatie",
+    "name": "pct_employees_with_flexible_employment",
+    "description": "% employees with flexible employment",
+    "spider": "% employees with flexible…",
+    "unit": "%"
+  },
+  {
+    "dutch": "percentageHuishoudensMetLageKoopkracht",
+    "name": "pct_households_with_low_purchasing_power",
+    "description": "% households with low purchasing power",
+    "spider": "% households with low pur…",
+    "unit": "%"
+  }
+]
