@@ -19,7 +19,7 @@ for feature in AREAS["features"]:
 # CBS column catalogue lives in cbs_columns.json (Dutch field, our name, description,
 # spider label, unit). CBS = every measure present in the data; CBS_DEFAULT = the curated
 # starter set shown in the spider/table before the user picks more from the dropdown.
-_CBS_META = json.load(open(os.path.join(os.path.dirname(__file__), "cbs_columns.json")))
+_CBS_META = json.load(open(os.path.join(os.path.dirname(__file__), "assets", "cbs_columns.json")))
 _CBS_META = [e for e in _CBS_META if e["name"] in df.columns]  # tolerate data with fewer columns
 CBS = [e["name"] for e in _CBS_META]
 CBS_DEFAULT = [e["name"] for e in _CBS_META if e.get("default")] or CBS[:10]

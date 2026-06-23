@@ -21,7 +21,7 @@ import umap
 # CBS variables loaded per buurt -> {our column name: PDOK wijkenbuurten WFS field}.
 # The full column catalogue (Dutch field, our name, description, spider label, unit) lives
 # in cbs_columns.json; edit that file to add/relabel measures. app.py reads the same file.
-CBS_META = json.load(open(os.path.join(os.path.dirname(__file__), "cbs_columns.json")))
+CBS_META = json.load(open(os.path.join(os.path.dirname(__file__), "assets", "cbs_columns.json")))
 CBS = {e["name"]: e["dutch"] for e in CBS_META}   # all numeric measures, not just a curated few
 CBS_COLS = list(CBS)   # downstream code (build/mock/app) still uses CBS_COLS
 
