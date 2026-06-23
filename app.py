@@ -256,7 +256,7 @@ def mapfig(i, filter, map_style, k=K, view=None, color_mode=None, topk_only=True
         label = " + ".join(SPACE_SHORT[space] for space in selected_spaces)
         hover_text = [
             f"{df.at[idx, 'name']}<br>" +
-            (f"{label} similarity: {avg_pct[idx]:.0%}<br>rank: #{rank[idx]} of {k}" if topk_only
+            (f"{label} similarity: {avg_pct[idx]:.0%}<br>Rank: #{rank[idx]} of {k}" if topk_only
              else f"{label} similarity: {avg_pct[idx]:.0%}")
             for idx in surface_idx
         ]
@@ -451,9 +451,12 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
                    "match. The Map colour boxes above the map choose which kind of similarity is used (CLIP, text, CBS, or a mix), the "
                    "Similar shown slider on the left sets how many neighbours are highlighted, and turning off Top-K only shades every "
                    "neighbourhood instead of just the closest ones."),
-            html.P("To compare a few neighbourhoods, hold shift and click them; the table and spider chart then show them side by side, "
-                   "and Clear empties the selection. On the left you can also filter the neighbourhoods with a query and choose which "
-                   "indicators to show."),
+            html.P("To compare a few neighbourhoods, hold shift and click them; " 
+                   "the table and spider chart then show them side by side, and Clear empties the selection. "
+                   "On the left you can choose which indicators to show in the table and spider chart. "
+                   "Additionally, the query panel can be used to filter which neighborhoods to show. "
+                   "To use it, a valid filter must be entered (e.g. 'population >= 5000 | density >20000'). "
+                   "The dropdown menu below can be used to find and insert attributes into the query text. "),
             html.P("The spider chart is relative: each axis runs from the lowest value in the city at the centre to the highest at the "
                    "edge, so you read the shape rather than exact numbers (the table has those). A hollow circle marks a value CBS did "
                    "not report, drawn in the middle so the shape stays whole."),
@@ -479,12 +482,13 @@ app.layout = html.Div(style={"background": "#f5f6f8", "height": "100vh"}, childr
             dcc.Dropdown(id="query_columns", options=QOPTS, value=None,
                          placeholder="Use the dropdown to insert attributes in the query"),
             html.Hr(style={"width": "100%", "border": "none", "borderTop": "1px solid #e3e6ea", "margin": "4px 0"}),
-            html.Div("Indicators", style=LABEL),
-            dcc.Dropdown(OPTS, CBS_DEFAULT, id="column_select", closeOnSelect=False, multi=True, clearable=True,
-                         placeholder="At least one column must be selected"),
             html.Div("Similar shown per facet (K)", style=LABEL),
             dcc.Slider(1, K_MAX, 1, value=K, id="k_slider", marks={1: "1", K_MAX: str(K_MAX)},
                        tooltip={"placement": "bottom", "always_visible": True}),
+            html.Hr(style={"width": "100%", "border": "none", "borderTop": "1px solid #e3e6ea", "margin": "4px 0"}),
+            html.Div("Indicators", style=LABEL),
+            dcc.Dropdown(OPTS, CBS_DEFAULT, id="column_select", closeOnSelect=False, multi=True, clearable=True,
+                         placeholder="At least one column must be selected"),
             html.Div(style={"display": "flex", "justifyContent": "space-between", "alignItems": "center"}, children=[
                 html.Div("Selected areas", style=LABEL),
                 html.Div(style={"display": "flex", "gap": "6px"}, children=[
