@@ -9,3 +9,8 @@ env/
 
 # precompute.py scratch
 tiles/
+
+# kept local only (purged from history)
+report_tex/
+slides/
+docs/
